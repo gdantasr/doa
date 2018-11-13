@@ -1,4 +1,4 @@
-function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, threshold, tau, Cmat, v, sentido, plotar, outlier_option, filename )
+function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, sentido, plotar, outlier_option, filename )
 % Duas buscas. De cima para baixo e de baixo para cima.
 
 % Entradas:
@@ -12,9 +12,9 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, threshold, tau,
 %                   para substituir pelos dados da primeira curva ajustada
 
     % Setando valores default
-    if isempty(threshold)
-        threshold = 0.08;
-    end
+    %if isempty(threshold)
+    %    threshold = 0.08;
+    %end
     
     % Normaliza cada coluna da matriz de correlação
     Cmatn = zeros(size(Cmat));
@@ -46,15 +46,15 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, threshold, tau,
     
     se = strel('disk',5);
     BW = imopen(G, se);
-    image(100*BW)
-    set(gca,'YDir','reverse');
-    pause
+%     image(100*BW)
+%     set(gca,'YDir','reverse');
+%     pause
      
     se = strel('disk',5);
     BW = imclose(BW, se);
-    image(100*BW)
-    set(gca,'YDir','reverse');
-    pause
+%     image(100*BW)
+%     set(gca,'YDir','reverse');
+%     pause
     
     BW = BW(:, window);
         
@@ -99,25 +99,28 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, threshold, tau,
     % dist_source_source = 2.5;
     dist_mic_mic = 0.2;
     heigth_mic = 1.26;
+    vs = 340;
         
-    options = fitoptions('Method', 'NonlinearLeastSquares', 'Startpoint', [v, t90, dist_source_mic],  'Lower',[0, 0, 0], 'Upper', [100, t(end), 10]);
-    
+    options = fitoptions(   'Method',       'NonlinearLeastSquares', ... 
+                            'Startpoint',   [t90, dist_source_mic, v], ... 
+                            'Lower',        [0, 0, 0], ...
+                            'Upper',        [t(end), 10, 100]);   
+  
     % Fitting da curva superior
-    f_sup = fittype([ num2str(sinal),'*(sqrt( (((x - c) .* v/3.6) +', num2str(dist_mic_mic), ').^2 + (a)^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .* v/3.6 ).^2 + (a)^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
-          'dependent', {'y_sup'}, 'independent', {'x'}, 'coefficients', {'v','c','a'});
+    f_sup = fittype(@(a,b,v,x)passby( a, b, v, x, dist_mic_mic, heigth_mic, sinal), ...
+           'independent', {'x'}, 'coefficients', {'a','b','v'});
     fit_sup = fit(t(window)', curva_sup', f_sup, options);
     
     % Atualizando parâmetros iniciais para o ajuste de curva com os resultados da
     % curva superior e adicionando o atraso entre as fontes
-    %options = fitoptions('Method', 'NonlinearLeastSquares', 'Startpoint', [fit_sup.c, sinal*dist_source_source],  'Lower', [0, -10], 'Upper', [t(end), 10]);
-    options = fitoptions('Method', 'NonlinearLeastSquares', 'Startpoint', [fit_sup.c],  'Lower', [0], 'Upper', [t(end)]);
+    options = fitoptions(   'Method',       'NonlinearLeastSquares', ...
+                            'Startpoint',   [fit_sup.a], ... 
+                            'Lower',        [0], ... 
+                            'Upper', [t(end)]);
     
     % Fitting da curva inferior
-    
-    %f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist_mic_mic), ' - shift ).^2 + (', num2str(fit_sup.a),')^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6 - shift).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
-    %      'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c', 'shift'});
-    f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist_mic_mic), ').^2 + (', num2str(fit_sup.a),')^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
-          'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c'});
+    f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist_mic_mic, heigth_mic, sinal), ...
+              'independent', {'x'}, 'coefficients', {'a'} );
     fit_inf = fit(t(window)', curva_inf', f_inf, options);
     
     % Salva curvas para plot final
@@ -160,16 +163,14 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, threshold, tau,
     end
     
     % Refazendo os ajustes com os novos pontos
-    options = fitoptions('Method', 'NonlinearLeastSquares', 'Startpoint',...
-                        [v, t90, dist_source_mic],...
-                        'Lower',[0, 0, 0], 'Upper', [100, t(end), 10],...
+    options = fitoptions('Method', 'NonlinearLeastSquares', ...
+                        'Startpoint', [t90, dist_source_mic, v],...
+                        'Lower',[0, 0, 0], 'Upper', [t(end), 10, 100],...
                         'Exclude', outliers_sup);
    
     % Fitting da curva superior
-    f_sup = fittype([num2str(sinal),'*(sqrt( (((x - c) .* v/3.6) +', num2str(dist_mic_mic), ').^2 + (a)^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .* v/3.6).^2 + (a)^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
-          'dependent', {'y_sup'}, 'independent', {'x'}, 'coefficients', {'v','c','a'});
-    [fit_sup,gof] = fit(t(window)', curva_sup', f_sup, options);
-    t90f = fit_sup.c;
+    [fit_sup, gof] = fit(t(window)', curva_sup', f_sup, options);
+    t90f = fit_sup.a;
     
     %writetable(struct2table(gof), [filename, '.txt'])
     %fid = fopen([filename, '.txt'], 'wt');
@@ -177,18 +178,17 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, threshold, tau,
     
     % Atualizando parâmetros iniciais para o ajuste de curva com os resultados da
     % curva superior e adicionando o atraso entre as fontes
-    
-    %options = fitoptions('Method', 'NonlinearLeastSquares', 'Startpoint', [fit_sup.c, sinal*dist_source_source],...  
-    %                     'Lower', [0, -10], 'Upper', [t(end), 10], 'Exclude', outliers_inf);
-    options = fitoptions('Method', 'NonlinearLeastSquares', 'Startpoint', [fit_sup.c],  'Lower', [0], 'Upper', [t(end)]);
+    options = fitoptions(   'Method',       'NonlinearLeastSquares', ...
+                            'Startpoint',   [fit_sup.a], ...  
+                            'Lower',        [0], ...
+                            'Upper',        [t(end)], ...
+                            'Exclude', outliers_inf);  % NAO TAVA USANDO ESSE EXCLUDE. POR QUE?
                          
     % Fitting da curva inferior
-%     f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist_mic_mic), ' - shift).^2 + (', num2str(fit_sup.a),')^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6 - shift).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
-%           'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c', 'shift'});
-%     fit_inf = fit(t(window)', curva_inf', f_inf, options);
-        
-    f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist_mic_mic), ').^2 + (', num2str(fit_sup.a),')^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
-          'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c'});
+%     f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist_mic_mic), ').^2 + (', num2str(fit_sup.a),')^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
+%           'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c'});
+    f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist_mic_mic, heigth_mic, sinal), ...
+                     'independent', {'x'}, 'coefficients', {'a'} );
     fit_inf = fit(t(window)', curva_inf', f_inf, options);
     
     y_sup = fit_sup(t);
