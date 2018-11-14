@@ -4,14 +4,12 @@ function [azimuth, delay, t, tau, Cmat] = doa_gcc(x1, x2, dx, N, Fs)
 % direction estimation (azimuth phi) for 1 dim. microphone arrays
 % using generalized cross correlation and speech activity detection
 %
-% (for use in oversampled filterbank)
-%
 
-% x1,x2   microphone signals
-% dx      microphone distance in meters
-% N       signal frame length
-% Fs      sampling frquency in Hz
-% azimuth     azimuth in degrees
+% x1,x2     microphone signals
+% dx        microphone distance in meters
+% N         signal frame length
+% Fs        sampling frquency in Hz
+% azimuth   azimuth in degrees
 
 Lov = 4;    % Number of overlapping samples between frames
 M = round(N/Lov);   % frame hop size

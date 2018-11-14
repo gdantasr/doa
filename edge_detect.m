@@ -1,4 +1,5 @@
-function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, sentido, plotar, outlier_option, filename )
+function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, sentido, plotar, outlier_option, filename, dist)
+%
 % Duas buscas. De cima para baixo e de baixo para cima.
 
 % Entradas:
@@ -88,26 +89,24 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     curva_inf = (((curva_inf./max(curva_inf)).*(2*max(tau))) + min(tau));
     
     % Verifica sentido de movimento do veículo
-    if sentido == '0° -> 180°'
+    if strcmp (sentido, '0 -> 180')
         sinal = -1; 
     else
         sinal = 1;
     end
-     
+    sentido
+    sinal
+    
     x = t(window);
-    dist_source_mic = 3.6;
-    % dist_source_source = 2.5;
-    dist_mic_mic = 0.2;
-    heigth_mic = 1.26;
     vs = 340;
         
     options = fitoptions(   'Method',       'NonlinearLeastSquares', ... 
-                            'Startpoint',   [t90, dist_source_mic, v], ... 
+                            'Startpoint',   [t90, dist.source_mic, v], ... 
                             'Lower',        [0, 0, 0], ...
                             'Upper',        [t(end), 10, 100]);   
   
     % Fitting da curva superior
-    f_sup = fittype(@(a,b,v,x)passby( a, b, v, x, dist_mic_mic, heigth_mic, sinal), ...
+    f_sup = fittype(@(a,b,v,x)passby( a, b, v, x, dist.mic_mic, dist.heigth, sinal), ...
            'independent', {'x'}, 'coefficients', {'a','b','v'});
     fit_sup = fit(t(window)', curva_sup', f_sup, options);
     
@@ -119,7 +118,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
                             'Upper', [t(end)]);
     
     % Fitting da curva inferior
-    f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist_mic_mic, heigth_mic, sinal), ...
+    f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist.mic_mic, dist.heigth, sinal), ...
               'independent', {'x'}, 'coefficients', {'a'} );
     fit_inf = fit(t(window)', curva_inf', f_inf, options);
     
@@ -164,7 +163,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     
     % Refazendo os ajustes com os novos pontos
     options = fitoptions('Method', 'NonlinearLeastSquares', ...
-                        'Startpoint', [t90, dist_source_mic, v],...
+                        'Startpoint', [t90, dist.source_mic, v],...
                         'Lower',[0, 0, 0], 'Upper', [t(end), 10, 100],...
                         'Exclude', outliers_sup);
    
@@ -185,9 +184,9 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
                             'Exclude', outliers_inf);  % NAO TAVA USANDO ESSE EXCLUDE. POR QUE?
                          
     % Fitting da curva inferior
-%     f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist_mic_mic), ').^2 + (', num2str(fit_sup.a),')^2 + (', num2str(heigth_mic),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(heigth_mic),')^2 )) / 343'],...
+%     f_inf = fittype([num2str(sinal),'*(sqrt( (((x - c) .*',num2str(fit_sup.v),'/3.6) + ', num2str(dist.mic_mic), ').^2 + (', num2str(fit_sup.a),')^2 + (', num2str(dist.heigth),')^2) - sqrt( ((x - c) .*', num2str(fit_sup.v),'/3.6).^2 + (', num2str(fit_sup.a), ')^2 + (', num2str(dist.heigth),')^2 )) / 343'],...
 %           'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c'});
-    f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist_mic_mic, heigth_mic, sinal), ...
+    f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist.mic_mic, dist.heigth, sinal), ...
                      'independent', {'x'}, 'coefficients', {'a'} );
     fit_inf = fit(t(window)', curva_inf', f_inf, options);
     

@@ -12,10 +12,5 @@ vs = 340;  % Velocidade de propagação do som
 
 y = sinal * ( sqrt( ( ( (x - a) .* speed / 3.6) + dist_mic_mic ).^2 + b^2 + heigth_mic^2 ) - sqrt( ( (x - a) .* speed / 3.6 ).^2 + (b)^2 + heigth_mic^2 )) / vs;
 
-a
-b
-speed
-dist_mic_mic
-heigth_mic
 end
 

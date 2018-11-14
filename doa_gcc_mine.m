@@ -1,12 +1,11 @@
-function [azimuth, delay, t, tau, Cmat] = doa_gcc(x1, x2, dx, N, Fs)
-% function phi = doa_gcc2(alg,x1,x2,dx,N,Fs)
+function [azimuth, delay, t, tau, Cmat] = doa_gcc_mine(x1, x2, dx, N, Fs)
 %
-% Estima a direção de chegada (azimuth em graus) para arranjo de mics.
-% unidimensional usando a função Correlação Cruzada Generalizada (GCC)
+% Direction of arrival estimation (azimuth in degrees) for unidimensional
+% mic array using Generalized Cross-correlation (GCC)
 %
-% Código adaptado de https://www.nt.tuwien.ac.at/staff-pages/gerhard-doblinger-speaker-tracking-aray/
+% Code adapted from https://www.nt.tuwien.ac.at/staff-pages/gerhard-doblinger-speaker-tracking-aray/
 %
-% Referência:
+% Main reference:
 % G. Doblinger:
 % "Localization and Tracking of Acoustical Sources";
 % in: "Topics in Acoustic Echo and Noise Control", Springer, Berlin - Heidelberg, 2006, ISBN: 3-540-33212-x, 91 - 120.
@@ -88,5 +87,5 @@ end
 
 t = M/Fs*[0:length(delay)-1];                       % Time vector
 tau = linspace(-maxDelay/Fs, maxDelay/Fs, L*OV);    % Delay vector
-delay = (delay(1:m+1)-Ndo)/(OV*Fs);                 % Correct delay offset
+delay = (delay(1:end)-Ndo)/(OV*Fs);                 % Correct delay offset
 azimuth = 180/pi*real(acos(vs/dx*delay));           % Azimuth from delay (LINEAR HORIZ. ARRAY)
