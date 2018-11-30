@@ -14,9 +14,9 @@ addpath (genpath('../Dissertação/Matlab/data/'))
 % Select pass by tests from avaible data
 
 % Pass by car, speed and index
-carID = {'f'};              % options: {'b', 'f', 'j', 'm'};
-speed = {'30','50','70','_ac'};       % options: {'30', '50', '60', '70', '_ac'};
-passbyID = {'_1'};          % options: {'1','2','3'}
+carID = {'f'};                      % options: {'b', 'f', 'j', 'm'};
+speed = {'30','50','70','_ac'};     % options: {'30', '50', '60', '70', '_ac'};
+passbyID = {'_1'};                  % options: {'1','2','3'}
 
 % Possible file names for specified car and speed
 fileNames = repmat(carID, [length(speed), 1]);
@@ -38,7 +38,6 @@ fileNames = fileNames(i);
 % Load files
 data = cell(length(fileNames),1);
 cropData = cell(length(fileNames),1);
-zeroMean = cell(length(fileNames),1);
 for fileID = 1 : length(fileNames)
    load(fileNames{fileID});     
    data{fileID} = eval([fileNames{fileID}, '.soundPressure']);  % Stores audio data
@@ -72,6 +71,6 @@ switch plotOption
         data = cropData;
 end
 
-F = plotSpec(data, fs, N, speed, carID, plotOption);
+F = plot_spec(data, fs, N, speed, carID, plotOption);
 imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
 savefig([figName, '.fig']);                 % Save .fig

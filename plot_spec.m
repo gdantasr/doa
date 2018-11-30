@@ -1,4 +1,4 @@
-function F = plotSpec( data, fs, N, speed, carID, plotOption )
+function F = plot_spec( data, fs, N, speed, carID, plotOption )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
