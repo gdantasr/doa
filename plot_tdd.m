@@ -1,4 +1,4 @@
-function [] = plot_tdd(t, tau, tdd, Cmat, salvar, filename, titulo)
+function plot_tdd(t, tau, tdd, Cmat, salvar, filename, titulo)
     figurebackcolor = 'white';
     pos = [0.01 0.52 0.49 0.40];
     fp1 = figure('numbertitle','off','name','GCC e TDD',...
@@ -6,7 +6,7 @@ function [] = plot_tdd(t, tau, tdd, Cmat, salvar, filename, titulo)
     colordef(fp1,figurebackcolor);
     
     imagesc(t,1000*tau,Cmat); 
-    colormap(flipud(bone)), colorbar; 
+    colormap(flipud(bone)); %colorbar; 
     set(gca,'YDir','normal'); hold on
 %    set(gcf,'Visible', 'off');
 %     if salvar == true
@@ -22,7 +22,7 @@ function [] = plot_tdd(t, tau, tdd, Cmat, salvar, filename, titulo)
     grid on;
     legend('show'); legend(p,   'TDD Estimado', ...
                                 'Location', 'best');
-    set(gca,'YTick',[-0.6:0.2:0.6])
+    set(gca,'YTick',[-0.8:0.2:0.8])
     fig = gcf;
     fig.InvertHardcopy = 'off';
     

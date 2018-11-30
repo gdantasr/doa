@@ -89,13 +89,11 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     curva_inf = (((curva_inf./max(curva_inf)).*(2*max(tau))) + min(tau));
     
     % Verifica sentido de movimento do veículo
-    if strcmp (sentido, '0 -> 180')
+    if strcmp (sentido, '0° -> 180°')
         sinal = -1; 
     else
         sinal = 1;
     end
-    sentido
-    sinal
     
     x = t(window);
     vs = 340;
@@ -168,7 +166,8 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
                         'Exclude', outliers_sup);
    
     % Fitting da curva superior
-    [fit_sup, gof] = fit(t(window)', curva_sup', f_sup, options);
+    %[fit_sup, gof] = fit(...);
+    fit_sup = fit(t(window)', curva_sup', f_sup, options);
     t90f = fit_sup.a;
     
     %writetable(struct2table(gof), [filename, '.txt'])

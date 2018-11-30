@@ -1,4 +1,4 @@
-function [dMin, iMin] = getCentralPoint(passbyFileName)
+function [dMin, iMin] = getCentralPoint(passbyLat, passbyLon)
 %   UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -11,10 +11,11 @@ avgArrayLat = mean(arrayLat);
 avgArrayLon = mean(arrayLon);
 loc1 = [avgArrayLat avgArrayLon];
 
+% TODO : BOTAR ESSA PARTE FORA DA FUNÇÃO, NO CALL DOA
 % Get vehicle positions
-tab = csv2table(passbyFileName);
-passbyLat = cellfun(@str2num, tab.lat);
-passbyLon = cellfun(@str2num, tab.lon);
+% tab = csv2table(passbyFileName);
+% passbyLat = cellfun(@str2num, tab.lat);
+% passbyLon = cellfun(@str2num, tab.lon);
 
 % Compute array-vehicle distante for each measure (1 per sec.)
 d = zeros(1, length(passbyLat));

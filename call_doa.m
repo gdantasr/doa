@@ -1,5 +1,18 @@
+% Reads data from INMETRO audio recordings and runs a DOA estimation for
+% each test. Don't forget to check simulation parameters before running:
+%
+% micsID:   Select 2 microphones from the circular array (1-11)
+% fs:       Sampling frequency for DOA estimation
+% N:        Block size for DOA estimation
+% carID:    Pass by car(s)
+% speed:    Pass by speed(s)
+
 clear all; clc; close all;
 
+% Data paths
+addpath (genpath('/home/netware/users/gabidantas/Documents/Mestrado/Dissertação/Matlab/data/'))
+%addpath (genpath('../data/'))
+%addpath ('/home/netware/users/gabidantas/Documents/Mestrado/Dissertação/Matlab/data/estruturas');     % Path to NEW data (INMETRO recordings)
 
 % Parameters definition
 load('array_circular_11mics.mat');          % Array geometry
@@ -25,11 +38,6 @@ heigth_mic = 1;
 dist_mic_mic = d;
 % dist_source_source = 2.5; NÃO USA EM LUGAR NENHUM
 
-% Data paths
-addpath ('/home/netware/users/gabidantas/Documents/Mestrado/Dissertação/Matlab/data/')
-addpath ('estruturas');     % Path to NEW data (INMETRO recordings)
-
-
 % Store all file names possibilities to go through
 carID = {'b', 'f', 'j', 'm'};               % Vehicles ID 
 speed = {'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
@@ -50,19 +58,12 @@ for namesID = 1 : length(allFileNames) % For each possible filename...
         load(filename)
         eval(['v = ' , filename, '.speed;'])                        % Vehicle speed
         eval(['fromto = ' , filename, '.orientation;'])             % Passby orientation
-        eval(['originalData = ', filename, '.soundPressure;'])   % Sound pressure measure
-       
-        % GAMBIARRA enquanto não conserta o angulo nos structs
-        if fromto == '0 -> 180'
-            fromto = '180 -> 0';
-        elseif fromto == '180 -> 0'
-            fromto = '0 -> 180';
-        end
-        
+        eval(['originalData = ', filename, '.soundPressure;'])      % Sound pressure measure
+             
         %% DOA Estimation
         
         % Pre processing
-        fm = 200;       % Low cutoff freq
+        fm = 800;       % Low cutoff freq
         fc = 4000;      % High cutoff freq
         [b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter 
         filtData = filter(b, a, originalData);     
@@ -85,10 +86,24 @@ for namesID = 1 : length(allFileNames) % For each possible filename...
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
         
+        fit_sup
+        
+%         % Speed tracking
+%         passbyTab = csv2table([filename, '.csv']);
+%         passbyLat = cellfun(@str2num, passbyTab.lat);
+%         passbyLon = cellfun(@str2num, passbyTab.lon);
+%         passbySpeed = cellfun(@str2num, passbyTab.kph);
+%         passbyTime = cellfun(@str2num, passbyTab.secs);
+%         [~, iMin] = getCentralPoint(passbyLat, passbyLon);   
+%         Vq = interp1(passbyTime, passbySpeed, t, 'v5cubic');
+%         Vq(isnan(Vq)) = 0.0;
+%         [~, iCentral] = min(abs(iMin - t));
+%         [~, nShift] = min(abs(t90 - t));
+%         Vshifted = circshift(Vq, [0, nShift - iCentral]);
+       
         % Plot DOA results
         titulo =  ['GCC-PHAT function. TestID: ', filename];
         plot_tdd(t, tau, [tdd_sup tdd_inf], Cmat, false, filename, titulo);
-        pause
         
         % Filename update
         passbyID = passbyID + 1;

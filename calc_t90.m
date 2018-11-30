@@ -1,4 +1,4 @@
-function [t90, Nspec90, f_spec] = calc_t90(x1,fs)
+function n90 = calc_t90(x1,fs)
 %function [t90, Nspec90, N_spec_win, f_spec, media_s_spec] = calc_t90(x1,fs)
 
 N_janela = 1024;
@@ -65,6 +65,7 @@ end
         Nfspec = Nfspec-1;
     end
     t90 = (Nspec90*tempoTotal)/length(max_s_spec);
+    n90 = round(t90*fs);
 %Terminava aqui
 %end
 
