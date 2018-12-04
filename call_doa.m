@@ -7,7 +7,8 @@
 % carID:    Pass by car(s)
 % speed:    Pass by speed(s)
 
-clear all; clc; close all;
+%clear all; clc; 
+close all;
 
 %% Define parameters and load files
 
@@ -21,7 +22,7 @@ vs = 340;                                   % Sound speed propagation
 micsID = [4 10] ;                           % Mics. for DOA algorithms
 originalFs = 25600;                         % From acquisition
 fs = 25600;                                 % For processing
-N = 256;                                    % Block size (samples)
+%N = 512;   % Block size (samples) % NOW CALCULATED FOR EACH PASS BY
 plot_doa = false;                           % DOA plot flag
 plot_fit = false;                           % Fitted curves plot flag 
 
@@ -63,6 +64,7 @@ originalData = cell(length(fileNames),1);
 cropData = cell(length(fileNames),1);
 v = cell(length(fileNames),1);
 fromto = cell(length(fileNames),1);
+n90 = cell(length(fileNames),1);
 for fileID = 1 : length(fileNames)
    load(fileNames{fileID});     % Load struct
    
@@ -70,8 +72,9 @@ for fileID = 1 : length(fileNames)
    originalData{fileID} = eval([fileNames{fileID}, '.soundPressure']);  % Stores audio data
    bias = repmat(mean(originalData{fileID}), [length(originalData{fileID}), 1]);
    originalData{fileID} = originalData{fileID} - bias;                  % Remove bias
-   n90 = calc_t90(originalData{fileID}(:,1), fs);                       % Azimuth = 90° instant calculation
-   cropData{fileID} = originalData{fileID}(n90-3*fs:n90+3*fs, 1);       % Crops data around n90
+   normData = originalData{fileID} / max(abs(originalData{fileID}(:)));
+   n90{fileID} = calc_t90(normData(:,1), fs);                           % Azimuth = 90° instant calculation
+   cropData{fileID} = originalData{fileID}(n90{fileID}-3*fs:n90{fileID}+3*fs, 1);   % Crops data around n90
    
    % Get speed
    v{fileID} = eval([fileNames{fileID}, '.speed;']);                   % Vehicle speed
@@ -85,18 +88,19 @@ end
 for namesID = 1 : length(fileNames) % For each file
         
     % Pre processing
-    fm = 200;       % Low cutoff freq
-    fc = 4000;      % High cutoff freq
-    [b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
-    %[b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter 
+    fm = 0;       % Low cutoff freq
+    fc = 8000;      % High cutoff freq
+    %[b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
+    [b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter 
     filtData = filter(b, a, originalData{namesID});     
     resampData = resample(filtData, fs, originalFs);
     %resampData = resample(originalData{namesID}, fs, originalFs);
     data = resampData;
+    N = 2^(ceil(log2( max_samp_triang(5, v{namesID}, fs) )));
 
     % Azimuth = 90° instant calculation
-    n90 = energy_peak(data(:,1), fs);
-    t90 = n90/fs;
+    %n90 = energy_peak(data(:,1), fs);
+    t90 = n90{fileID}/fs;
 
     % GCC-PHAT       
     [phi, tdd, t, tau, Cmat] = doa_gcc_mine(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
@@ -117,7 +121,7 @@ for namesID = 1 : length(fileNames) % For each file
     plot_tdd(t, tau, [tdd_sup tdd_inf], Cmat, false, fileNames{namesID}, titulo);
     F = getframe(gcf);
     figName = ['../Dissertação/Matlab/plots/doa_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_fs', num2str(fs)];
-    imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
-    savefig([figName, '.fig']);                 % Save .fig
+%     imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
+%     savefig([figName, '.fig']);                 % Save .fig
 
 end

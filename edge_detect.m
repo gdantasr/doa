@@ -11,54 +11,47 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
 % plotar - flag para plotar resultados
 % outlier_option - `exclude` para eliminar dados discrepantes ou `replace`
 %                   para substituir pelos dados da primeira curva ajustada
-
-    % Setando valores default
-    %if isempty(threshold)
-    %    threshold = 0.08;
-    %end
     
     % Normaliza cada coluna da matriz de correlação
-    Cmatn = zeros(size(Cmat));
-    for indice = 1:size(Cmat,2)
-       Cmatn(:, indice) = Cmat(:, indice) ./ max(Cmat(:,indice));
-    end
-    Cmat = Cmatn;
-    threshold = 0.15*max(max(Cmat));
-
-    
+    Cmat = Cmat / max(abs(Cmat(:)));
+        
     % Calculando janela de interesse (ignora dados distantes de t90)
     t_min = t90 - 1;
     t_max = t90 + 1;
-    delta_t = t(end) / (length(t) - 1); % Tempo entre amostras de tempo
-    indice_min = floor(t_min / delta_t) + 1; % Indice correspondente ao t_min  
-    indice_max = floor(t_max / delta_t) + 1; % Indice correspondente ao t_max
-    if indice_min < 1
-        indice_min = 1;
-    elseif indice_max > length(t)
-        indice_max = length(t);
-    end
+    delta_t = t(end) / (length(t) - 1);         % Periodo entre amostras de tempo
+    indice_min = floor(t_min / delta_t) + 1;    % Indice correspondente ao t_min  
+    indice_max = floor(t_max / delta_t) + 1;    % Indice correspondente ao t_max
+    indice_min = max([1 indice_min]);           % Limita indices ao comprimento
+    indice_max = min([length(t) indice_max]);   % do vetor de tempo
+%     if indice_min < 1
+%         indice_min = 1;
+%     elseif indice_max > length(t)
+%         indice_max = length(t);
+%     end
     window = indice_min : indice_max; % Intervalo da janela
     tw = t(window);
+    Cwindow = Cmat(:, window);
+    threshold = 0.15*max(Cwindow(:));
     
-    G = mat2gray(Cmat, [threshold max(max(Cmat))]);
-%     image(100*G)
-%     set(gca,'YDir','reverse');
+    G = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
+%     image(1000*G)
 %     pause
     
-    se = strel('disk',5);
+    se = strel('disk',2);
     BW = imopen(G, se);
-%     image(100*BW)
-%     set(gca,'YDir','reverse');
+%     image(1000*BW)
 %     pause
      
-    se = strel('disk',5);
+    se = strel('disk', 5);
     BW = imclose(BW, se);
-%     image(100*BW)
-%     set(gca,'YDir','reverse');
+%     image(1000*BW)
 %     pause
     
-    BW = BW(:, window);
-        
+    se = strel('disk', 5);
+    BW = imopen(BW, se);
+%     image(1000*BW)
+%     pause
+           
     curva_sup = [0];
     curva_inf = [0];
     cpeaks = zeros(size(BW));
