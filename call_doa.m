@@ -7,7 +7,7 @@
 % carID:    Pass by car(s)
 % speed:    Pass by speed(s)
 
-%clear all; clc; 
+clear all; clc; 
 close all;
 
 %% Define parameters and load files
@@ -19,24 +19,17 @@ addpath (genpath('../Dissertação/Matlab/data/'))
 load('array_circular_11mics.mat');          % Array geometry
 array = posMic;
 vs = 340;                                   % Sound speed propagation
-micsID = [4 10] ;                           % Mics. for DOA algorithms
 originalFs = 25600;                         % From acquisition
 fs = 25600;                                 % For processing
-%N = 512;   % Block size (samples) % NOW CALCULATED FOR EACH PASS BY
 plot_doa = false;                           % DOA plot flag
 plot_fit = false;                           % Fitted curves plot flag 
-
-% Calculate distance between two mics. (for DOA)
-p1 = array (micsID(1), :);
-p2 = array (micsID(2), :);
-d = norm (p1-p2);  % Euclidean distance between two points
 
 % Experiment distances in meters (INMETRO)
 % TODO : BOTAR NUMA TABELA/STRUCT 
 % TODO : GRAVAR FS NO STRUCT
 dist_source_mic = 2;
 heigth_mic = 1;
-dist_mic_mic = d;
+%dist_mic_mic = d;
 % dist_source_source = 2.5; NÃO USA EM LUGAR NENHUM
 
 % Possible file names for specified car and speed
@@ -86,42 +79,64 @@ end
 
 %% DOA Estimation
 for namesID = 1 : length(fileNames) % For each file
+    
+    for mic = 4
         
-    % Pre processing
-    fm = 0;       % Low cutoff freq
-    fc = 8000;      % High cutoff freq
-    %[b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
-    [b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter 
-    filtData = filter(b, a, originalData{namesID});     
-    resampData = resample(filtData, fs, originalFs);
-    %resampData = resample(originalData{namesID}, fs, originalFs);
-    data = resampData;
-    N = 2^(ceil(log2( max_samp_triang(5, v{namesID}, fs) )));
+        micsID = [mic 14-mic] ;               % Mics. for DOA algorithms
+        % Calculate distance between two mics. (for DOA)
+        p1 = array (micsID(1), :);
+        p2 = array (micsID(2), :);
+        d = norm (p1-p2);  % Euclidean distance between two points
+        dist_mic_mic = d;
 
-    % Azimuth = 90° instant calculation
-    %n90 = energy_peak(data(:,1), fs);
-    t90 = n90{fileID}/fs;
+        % Pre processing
+        fm = 500;       % Low cutoff freq
+        fc = 3000;      % High cutoff freq
+        [b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
+        %[b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter
+        %[b,a] = butter(5, fm/(originalFs/2), 'high');   % Highpass filter 
+        filtData = filter(b, a, originalData{namesID});     
+        resampData = resample(filtData, fs, originalFs);
+        %resampData = resample(originalData{namesID}, fs, originalFs);
+        data = resampData;
+        N = 2^(ceil(log2( max_samp_triang(5, v{namesID}, fs) )));
 
-    % GCC-PHAT       
-    [phi, tdd, t, tau, Cmat] = doa_gcc_mine(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+        % Azimuth = 90° instant calculation
+        t90 = n90{fileID}/fs;
 
-    % Post processing
-    % TODO - passar distancias como arg (cell? struct?)
-    dist.source_mic = 2;
-    dist.mic_mic = d;
-    dist.heigth = 1;
-    [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
-    phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
-    phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
+        % GCC-PHAT       
+        [phi, tdd, t, tau, Cmat] = doa_gcc_mine(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 
-    %fit_sup
+        % Post processing
+        dist.source_mic = 2;
+        dist.mic_mic = d;
+        dist.heigth = 1;
+        [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
+        phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
+        phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
+        
+        fit_sup
+        fit_inf
+        
+        % Plot DOA results
+        titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. Mics ', num2str(mic) , ' e ', num2str(14-mic), '. TestID: ', fileNames{namesID}];
+        %titulo =  ['Função GCC-PHAT. Fullband. Mics ', num2str(mic) , ' e ', num2str(14-mic), '. TestID: ', fileNames{namesID}];
+        plot_tdd(t, tau, [tdd_sup tdd_inf], Cmat, false, fileNames{namesID}, titulo);
+        %set(gcf,'Visible', 'off');
+        % Saving
+        F = getframe(gcf);
+        figName = ['../Dissertação/Matlab/plots/doa_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_mics ', num2str(mic) , '_', num2str(14-mic),'_d', num2str(d)];
+        %figName = ['../Dissertação/Matlab/plots/doa_fullband_', fileNames{namesID}, '_mics ', num2str(mic) , '_', num2str(14-mic),'_d', num2str(d)];
+        imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
+        savefig([figName, '.fig']);                 % Save .fig
 
-    % Plot DOA results
-    titulo =  ['GCC-PHAT function. Banda ', num2str(fm), '-', num2str(fc), ' Hz. TestID: ', fileNames{namesID}];
-    plot_tdd(t, tau, [tdd_sup tdd_inf], Cmat, false, fileNames{namesID}, titulo);
-    F = getframe(gcf);
-    figName = ['../Dissertação/Matlab/plots/doa_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_fs', num2str(fs)];
-%     imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
-%     savefig([figName, '.fig']);                 % Save .fig
+    end
+    
+%     % Paste figures on the subplots
+%     figure;
+%     for i=1:4
+%         h(i) = subplot(4,1,i);
+%         copyobj(allchild(get(sub(i),'CurrentAxes')),h(i));
+%     end
 
 end

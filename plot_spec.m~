@@ -208,44 +208,44 @@ switch plotOption
         figure;
         set(gcf, 'Position', get(0, 'Screensize'))
         hold on;
-        Nmean = 5;
                        
         % Constant speed 1
         [ S, F, T, P] = spectrogram(data{1}(:,1), hamming(N), N/2, 2048, fs,'yaxis'); % Plots spectrogram
         [~, n90_spec] = min(abs(T - repmat(n90{1}/fs, size(T))));
-%         Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
-%         plot(F, 10*log10(Pmean))
-        semilogx(F, 10*log10(P(:, n90_spec)))
+        Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
+        plot(F, 10*log10(Pmean))
+        %plot(F, 10*log10(P(:, n90_spec)))
         l1 = [num2str(speed{1}), ' km/h'];   % legend for first plot
                         
         % Constant speed 2
         [ S, F, T, P] = spectrogram(data{2}(:,1), hamming(N), N/2, 2048, fs,'yaxis'); % Plots spectrogram
         [~, n90_spec] = min(abs(T - repmat(n90{2}/fs, size(T))));
-        %Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
-        %plot(F, 10*log10(Pmean))
-        semilogx(F, 10*log10(P(:, n90_spec)))
+        Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
+        plot(F, 10*log10(Pmean))
+        %plot(F, 10*log10(P(:, n90_spec)))
         l2 = [num2str(speed{2}), 'km/h'];   % legend for first plot
                
         % Constant speed 3
         [ S, F, T, P] = spectrogram(data{3}(:,1), hamming(N), N/2, 2048, fs,'yaxis'); % Plots spectrogram
         [~, n90_spec] = min(abs(T - repmat(n90{3}/fs, size(T))));
-        %Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
-        %plot(F, 10*log10(Pmean))
-        semilogx(F, 10*log10(P(:, n90_spec)))
+        Nmean = 10;
+        Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
+        plot(F, 10*log10(Pmean))
+        %plot(F, 10*log10(P(:, n90_spec)))
         l3 = [num2str(speed{3}), 'km/h'];   % legend for first plot
         hold on
                         
         % Accelerating
         [ S, F, T, P] = spectrogram(data{4}(:,1), hamming(N), N/2, 2048, fs,'yaxis');
         [~, n90_spec] = min(abs(T - repmat(n90{4}/fs, size(T))));
-        %Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
-        %plot(F, 10*log10(Pmean))
-        semilogx(F, 10*log10(P(:, n90_spec)))
+        Pmean = sum( P(:, n90_spec - Nmean/2 : n90_spec + Nmean/2 - 1), 2) / Nmean;
+        plot(F, 10*log10(Pmean))
+        %plot(F, 10*log10(P(:, n90_spec)))
         l4 = 'Aceleração';
         
         legend({l1, l2, l3, l4})    % Image legend
         %axis([F(1) F(end) -140 -20])
-        %axis tight
+        axis tight
         xlabel('Freq. (Hz)')
         ylabel('PSD (dB)')
         titleHandle = suptitle(['PSD. Velocidade Constante vs Aceleração. Carro ', carID{1},'.']); % Image title
