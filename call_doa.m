@@ -7,7 +7,7 @@
 % carID:    Pass by car(s)
 % speed:    Pass by speed(s)
 
-clear all; clc; 
+%clear all; clc; 
 close all;
 
 %% Define parameters and load files
@@ -33,9 +33,9 @@ heigth_mic = 1;
 % dist_source_source = 2.5; NÃO USA EM LUGAR NENHUM
 
 % Possible file names for specified car and speed
-carID = {'j'};      %{'b', 'f', 'j', 'm'};               % Vehicles ID 
-speed = {'30'};     %'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
-passbyID = {'_1'};   %{'_1','_2','_3'};                   
+carID = {'b', 'f', 'j', 'm'};               % Vehicles ID 
+speed = {'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
+passbyID = {'_1','_2','_3'};                   
 fileNames = repmat(carID, [length(speed), 1]);
 fileNames = fileNames(:);
 fileNames = strcat( fileNames, repmat(speed', [length(carID), 1] ) );
@@ -90,19 +90,18 @@ for namesID = 1 : length(fileNames) % For each file
         dist_mic_mic = d;
 
         % Pre processing
-        fm = 500;       % Low cutoff freq
-        fc = 3000;      % High cutoff freq
+        fm = 200;       % Low cutoff freq
+        fc = 4000;      % High cutoff freq
         [b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
         %[b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter
         %[b,a] = butter(5, fm/(originalFs/2), 'high');   % Highpass filter 
         filtData = filter(b, a, originalData{namesID});     
         resampData = resample(filtData, fs, originalFs);
-        %resampData = resample(originalData{namesID}, fs, originalFs);
         data = resampData;
         N = 2^(ceil(log2( max_samp_triang(5, v{namesID}, fs) )));
 
         % Azimuth = 90° instant calculation
-        t90 = n90{fileID}/fs;
+        t90 = n90{namesID}/fs;
 
         % GCC-PHAT       
         [phi, tdd, t, tau, Cmat] = doa_gcc_mine(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
@@ -114,21 +113,20 @@ for namesID = 1 : length(fileNames) % For each file
         [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
-        
-        fit_sup
-        fit_inf
+
+        % Get speed curve
+        vCurve = track_speed(fileNames{namesID}, t, t90);
         
         % Plot DOA results
-        titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. Mics ', num2str(mic) , ' e ', num2str(14-mic), '. TestID: ', fileNames{namesID}];
+        titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. TestID: ', fileNames{namesID}];
         %titulo =  ['Função GCC-PHAT. Fullband. Mics ', num2str(mic) , ' e ', num2str(14-mic), '. TestID: ', fileNames{namesID}];
-        plot_tdd(t, tau, [tdd_sup tdd_inf], Cmat, false, fileNames{namesID}, titulo);
-        %set(gcf,'Visible', 'off');
+        plot_tdd_speed(t, tau, [tdd_sup tdd_inf], Cmat, false, fileNames{namesID}, titulo, vCurve);
+        set(gcf,'Visible', 'off');
         % Saving
         F = getframe(gcf);
-        figName = ['../Dissertação/Matlab/plots/doa_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_mics ', num2str(mic) , '_', num2str(14-mic),'_d', num2str(d)];
-        %figName = ['../Dissertação/Matlab/plots/doa_fullband_', fileNames{namesID}, '_mics ', num2str(mic) , '_', num2str(14-mic),'_d', num2str(d)];
+        figName = ['../Dissertação/Matlab/plots/speed/doa&speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(d)];
         imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
-        savefig([figName, '.fig']);                 % Save .fig
+%         savefig([figName, '.fig']);                 % Save .fig
 
     end
     

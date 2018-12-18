@@ -1,4 +1,4 @@
-function [phi, phi2, dt, dt2] = phi_theo_multisource (v, t90_inf, t90_sup, sentido, dist_source_mic, dist_source_source, heigth_mic, T)
+function [phi, phi2, dt, dt2] = phi_theorico (v, t90_inf, t90_sup, sentido, dist_source_mic, dist_source_source, heigth_mic, T)
 
 % phi e phi2 correspondem as curvas teoricas da DOA para as duas fontes
 % phi3 desconsidera a presenca das multiplas fontes, usando o ponto central

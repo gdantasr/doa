@@ -18,16 +18,21 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     % Calculando janela de interesse (ignora dados distantes de t90)
     t_min = t90 - 1;
     t_max = t90 + 1;
-    delta_t = t(end) / (length(t) - 1);         % Periodo entre amostras de tempo
-    indice_min = floor(t_min / delta_t) + 1;    % Indice correspondente ao t_min  
-    indice_max = floor(t_max / delta_t) + 1;    % Indice correspondente ao t_max
-    indice_min = max([1 indice_min]);           % Limita indices ao comprimento
-    indice_max = min([length(t) indice_max]);   % do vetor de tempo
+    
+    [~, indice_min] = min(abs(t_min - t));
+    [~, indice_max] = min(abs(t_max - t));
+%     delta_t = t(end) / (length(t) - 1);         % Periodo entre amostras de tempo
+%     indice_min = floor(t_min / delta_t);        % Indice correspondente ao t_min  
+%     indice_max = floor(t_max / delta_t);        % Indice correspondente ao t_max
+%     indice_min = max([1 indice_min]);           % Limita indices ao comprimento
+%     indice_max = min([length(t) indice_max]);   % do vetor de tempo
+
 %     if indice_min < 1
 %         indice_min = 1;
 %     elseif indice_max > length(t)
 %         indice_max = length(t);
 %     end
+
     window = indice_min : indice_max; % Intervalo da janela
     tw = t(window);
     Cwindow = Cmat(:, window);
