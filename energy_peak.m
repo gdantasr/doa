@@ -4,9 +4,9 @@ function n90 = energy_peak( signal, fs )
 
 timeWindow = 10e-3; % Comprimento da janela da média móvel em seg.
 sampWindow = floor( timeWindow * fs ); % Número de amostras da janela
-signal = mov_mean(signal, sampWindow); % Média móvel
+meanSignal = mov_mean(signal, sampWindow); % Média móvel
 
-energy = signal.^2;
+energy = meanSignal.^2;
 
 [~, n90] = max (energy);
 

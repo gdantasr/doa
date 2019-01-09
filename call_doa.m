@@ -90,8 +90,8 @@ for namesID = 1 : length(fileNames) % For each file
         dist_mic_mic = d;
 
         % Pre processing
-        fm = 200;       % Low cutoff freq
-        fc = 4000;      % High cutoff freq
+        fm = 500;       % Low cutoff freq
+        fc = 2000;      % High cutoff freq
         [b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
         %[b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter
         %[b,a] = butter(5, fm/(originalFs/2), 'high');   % Highpass filter 
@@ -124,7 +124,7 @@ for namesID = 1 : length(fileNames) % For each file
         set(gcf,'Visible', 'off');
         % Saving
         F = getframe(gcf);
-        figName = ['../Dissertação/Matlab/plots/speed/doa&speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(d)];
+        figName = ['../Dissertação/Matlab/plots/speed/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
         imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
 %         savefig([figName, '.fig']);                 % Save .fig
 

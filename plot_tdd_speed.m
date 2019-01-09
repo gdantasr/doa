@@ -20,7 +20,6 @@ function fig = plot_tdd_speed(t, tau, tdd, Cmat, salvar, filename, titulo, speed
     hLeft(2).Color = 'blue';
     hRigth(1).Color = 'red';
     
-    
     % Edit figure
     title(titulo);
     grid on;  
