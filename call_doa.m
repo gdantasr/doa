@@ -13,7 +13,7 @@ close all;
 %% Define parameters and load files
 
 % Data paths
-addpath (genpath('../Dissertação/Matlab/data/'))
+addpath (genpath('../data/'))
 
 % Parameters definition
 load('array_circular_11mics.mat');          % Array geometry
@@ -33,9 +33,9 @@ heigth_mic = 1;
 % dist_source_source = 2.5; NÃO USA EM LUGAR NENHUM
 
 % Possible file names for specified car and speed
-carID = {'b', 'f', 'j', 'm'};               % Vehicles ID 
-speed = {'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
-passbyID = {'_1','_2','_3'};                   
+carID = {'b'};%{'b', 'f', 'j', 'm'};               % Vehicles ID 
+speed = {'30'};%{'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
+passbyID = {'_1'};%{'_1','_2','_3'};                   
 fileNames = repmat(carID, [length(speed), 1]);
 fileNames = fileNames(:);
 fileNames = strcat( fileNames, repmat(speed', [length(carID), 1] ) );
@@ -44,7 +44,8 @@ fileNames = fileNames(:);
 fileNames = strcat( fileNames, repmat(passbyID', [length(carID)*length(speed), 1]) );
 
 % Check if possible files exist
-allFileNames = what(('../Dissertação/Matlab/data/estruturas')); % All files found in dir
+%allFileNames = what(('../Dissertação/Matlab/data/estruturas')); % All files found in dir
+allFileNames = what(('../data/estruturas')); % All files found in dir
 allFileNames = allFileNames.mat;    % Only .mat files
 for k=1:length(allFileNames)        % Ignores end of strings ('.mat')
     allFileNames{k} = allFileNames{k}(1:end-4);
@@ -96,7 +97,8 @@ for namesID = 1 : length(fileNames) % For each file
         %[b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter
         %[b,a] = butter(5, fm/(originalFs/2), 'high');   % Highpass filter 
         filtData = filter(b, a, originalData{namesID});     
-        resampData = resample(filtData, fs, originalFs);
+        %resampData = resample(filtData, fs, originalFs);
+        resampData = resample(originalData{namesID}, fs, originalFs);
         data = resampData;
         N = 2^(ceil(log2( max_samp_triang(5, v{namesID}, fs) )));
 
@@ -104,28 +106,52 @@ for namesID = 1 : length(fileNames) % For each file
         t90 = n90{namesID}/fs;
 
         % GCC-PHAT       
-        [phi, tdd, t, tau, Cmat] = doa_gcc_mine(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
-
+        [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+        
+        % ITD
+        [phi2, tdd2, t2, tau2, Cmat2] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);        
         % Post processing
         dist.source_mic = 2;
         dist.mic_mic = d;
         dist.heigth = 1;
         [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
+        [tdd_inf2, tdd_sup2, fit_inf2, fit_sup2] = edge_detect (t2, t90, tau2, Cmat2, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
+        phi_inf2 = 180/pi*real(acos(vs/d*tdd_inf2)); 
+        phi_sup2 = 180/pi*real(acos(vs/d*tdd_sup2));
 
         % Get speed curve
         vCurve = track_speed(fileNames{namesID}, t, t90);
         
+%% Theoretical DOA
+
+        axleDistance = 2.5; % Front-rear axles distance (m)
+        % Verifica sentido de movimento do veículo
+        if strcmp (fromto{namesID}, '0° -> 180°')
+            sinal = -1; 
+        else
+            sinal = 1;
+        end
+        t90_inf = t90 + axleDistance/v{namesID};
+        t90_sup = t90 - axleDistance/v{namesID};
+        tdd_inf_theo = passby( t90_inf, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
+        tdd_sup_theo = passby( t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
+        tdd_inf_theo2 = passby( t90_inf, dist.source_mic, vCurve, t2, dist_mic_mic, heigth_mic, sinal);
+        tdd_sup_theo2 = passby( t90_sup, dist.source_mic, vCurve, t2, dist_mic_mic, heigth_mic, sinal);
+
         % Plot DOA results
         titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. TestID: ', fileNames{namesID}];
-        %titulo =  ['Função GCC-PHAT. Fullband. Mics ', num2str(mic) , ' e ', num2str(14-mic), '. TestID: ', fileNames{namesID}];
-        plot_tdd_speed(t, tau, [tdd_sup tdd_inf], Cmat, false, fileNames{namesID}, titulo, vCurve);
-        set(gcf,'Visible', 'off');
+               
+        %plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{namesID}, titulo, vCurve);
+        plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{namesID}, titulo, vCurve);
+        plot_tdd_speed_theo(t2, tau2, [tdd_sup2 tdd_inf2, tdd_sup_theo2' tdd_inf_theo2'], Cmat2, false, fileNames{namesID}, titulo, vCurve);
+        
+        %set(gcf,'Visible', 'off');
         % Saving
         F = getframe(gcf);
-        figName = ['../Dissertação/Matlab/plots/speed/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
-        imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
+        figName = ['../Dissertação/Matlab/plots/speed_theo/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
+%         imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
 %         savefig([figName, '.fig']);                 % Save .fig
 
     end

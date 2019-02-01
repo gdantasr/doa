@@ -39,22 +39,22 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     threshold = 0.15*max(Cwindow(:));
     
     G = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
-%     image(1000*G)
+%     image(100*G)
 %     pause
-    
+%     
     se = strel('disk',1);
     BW = imopen(G, se);
-%     image(1000*BW)
+%     image(100*BW)
 %     pause
      
     se = strel('disk', 8);
     BW = imclose(BW, se);
-%     image(1000*BW)
+%     image(100*BW)
 %     pause
     
-%     se = strel('disk', 5);
-%     BW = imopen(BW, se);
-%     image(1000*BW)
+    se = strel('disk', 5);
+    BW = imopen(BW, se);
+%     image(100*BW)
 %     pause
            
     curva_sup = [0];
@@ -210,7 +210,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
         p_dinf.Color = RGB('light blue'); p_dinf.MarkerSize = 4;
         p_dsup.Color = RGB('light orange'); p_dsup.MarkerSize = 4;
         axis ([0 t(end) -0.8 0.8]);
-        xlabel('Tempo (s)'), ylabel('Atraso \tau (s)');
+        xlabel('Tempo (s)'), ylabel('Atraso \tau (ms)');
         h = [p_dsup p_dinf];
         legend(h, 'Dados Fonte 1', 'Dados Fonte 2',...
                 'Location', 'northoutside', 'Orientation', 'horizontal')
@@ -224,7 +224,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
         p_cinf.Color = RGB('dark blue'); pcinf.LineWidth = 1;
         p_csup.Color = RGB('orange'); p_csup.LineWidth = 1;
         axis ([0 t(end) -0.8 0.8]);
-        xlabel('Tempo t (s)'), ylabel('Atraso \tau (s)');
+        xlabel('Tempo t (s)'), ylabel('Atraso \tau (ms)');
         h = [p_csup p_dsup p_cinf p_dinf];
         legend(h, 'Curva Fonte 1', 'Curva Fonte 2', 'Dados Fonte 1', 'Dados Fonte 2',...
                 'Location', 'northoutside', 'Orientation', 'horizontal')

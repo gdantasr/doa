@@ -1,4 +1,4 @@
-function phi_d = doa_itdfullBand(x1,x2,dx,N,Fs,alpha,v,t90)
+function [phi_d, delay, t, Ti, Psum] = doa_itd(x1,x2,dx,N,Fs)
 %function phi = doa_itd(x1,x2,dx,N,Fs,alpha)
 %
 % direction estimation (azimuth phi) for 1 dim. microphone array
@@ -39,19 +39,21 @@ function phi_d = doa_itdfullBand(x1,x2,dx,N,Fs,alpha,v,t90)
 
 show_final_map = 0;                          % disable plot of ITD map   
 
-if nargin < 3
-   help doa_itd
-   return
-elseif nargin < 4
-   N = 512;
-   Fs = 16000;
-   alpha = 0.9;
-elseif nargin < 5
-   Fs = 16000;
-   alpha = 0.9;
-elseif nargin < 6
-   alpha = 0.9;
-end
+% if nargin < 3
+%    help doa_itd
+%    return
+% elseif nargin < 4
+%    N = 512;
+%    Fs = 16000;
+%    alpha = 0.9;
+% elseif nargin < 5
+%    Fs = 16000;
+%    alpha = 0.9;
+% elseif nargin < 6
+%    alpha = 0.9;
+% end
+
+alpha = 0.85;
 
 doa_threshold = 8.5/(1-alpha);               % threshold for speech activity
 dphi = 2.5;                                  % azimuth resolution in deg.
@@ -72,6 +74,7 @@ Nf = N;
 Nfh = Nf/2+1;
 
 phi_d = zeros(Ndata,1);
+delay = zeros(Ndata,1);
 I = floor(180/dphi);                         % number of azimuths (dphi resolution)
 I = I + 1 + mod(I,2);                        % make I odd
 imax_old = floor(I/2);
@@ -85,6 +88,7 @@ phi = linspace(0,180,I);
 f = linspace(0,Fs/2,Nfh)';
 e1 = exp(-j*2*pi*f*Ti);                      % matrix of phase factors (first signal)
 e2 = exp(-j*2*pi*f*Ti(end:-1:1));            % vector of phase factors (second signal)
+t = M/Fs*[0:Ndata-1];
 
 m = 0;
 for n = 1:M:Nx-N+1
@@ -106,16 +110,21 @@ for n = 1:M:Nx-N+1
    end
 %   Pmap(find(Pmap<1)) = 0;                   % this may eliminate some amount of spurious data
    Psum(m,:) = sum(Pmap(:,2:I-1));           % sum-up (average over frequency)   
-                                             % eliminate minima detection erros at phi = 0, 180°
-					                              % (at frequencies with no spectral components)
+                                             % eliminate minima detection erros at phi = 0, 180°					                              % (at frequencies with no spectral components)
    [Pmax,imax] = max(Psum(m,:));             % locate maximum
    if Pmax > doa_threshold
       phi_d(m) = phi(imax);
+      delay(m) = Ti(imax);
       imax_old = imax;
    else
       phi_d(m) = phi(imax_old);
-   end      
+      delay(m) = Ti(imax_old);
+   end
 end
+
+t = M/Fs*[0:m-1];
+Ti = 2*Ti(2:end-1);
+Psum = flipud(Psum.');
 
 % % plot phi-trace
 % 
@@ -152,8 +161,9 @@ end
 %    title(sprintf('ITD histogram map at time = %3.2f sec', t(end)));
 % end
 % 
-% % plot Psum over time
-% 
+% plot Psum over time
+
+% figurebackcolor = 'black';
 % pos = [0.505 0.5 0.49 0.42];
 % fp1 = figure('numbertitle','off','name','ITD map',...
 %              'Units','normal','Position',pos);
@@ -165,5 +175,6 @@ end
 % xlabel('Time t in sec.');
 % ylabel('Azimuth \phi in deg.');
 % title('Frequency averaged ITD histograms vs. time');
+% pause
 
 

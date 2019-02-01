@@ -15,7 +15,7 @@ function [ vShifted ] = track_speed( filename, tAudio, tCentralAudio )
     lonQ(isnan(lonQ)) = 0.0;
     latQ = interp1(passbyTime, passbyLat, tQ, 'linear');
     latQ(isnan(latQ)) = 0.0;
-    vQ = interp1(passbyTime, passbySpeed, tQ, 'linear');
+    vQ = interp1(passbyTime, passbySpeed, tQ, 'nearest');
     vQ(isnan(vQ)) = 0.0;
     
     % Compare vehicle and array GPS positions and get the minimum car-array
