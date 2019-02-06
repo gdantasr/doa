@@ -36,7 +36,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     window = indice_min : indice_max; % Intervalo da janela
     tw = t(window);
     Cwindow = Cmat(:, window);
-    threshold = 0.15*max(Cwindow(:));
+    threshold = 0.08*max(Cwindow(:));
     
     G = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
 %     image(100*G)
