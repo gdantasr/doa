@@ -104,23 +104,18 @@ for namesID = 1 : length(fileNames) % For each file
 
         % Azimuth = 90° instant calculation
         t90 = n90{namesID}/fs;
-
-        % GCC-PHAT       
-        [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
-        
+      
         % ITD
-        [phi2, tdd2, t2, tau2, Cmat2] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);        
+        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+        
         % Post processing
         dist.source_mic = 2;
         dist.mic_mic = d;
         dist.heigth = 1;
         [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
-        [tdd_inf2, tdd_sup2, fit_inf2, fit_sup2] = edge_detect (t2, t90, tau2, Cmat2, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
-        phi_inf2 = 180/pi*real(acos(vs/d*tdd_inf2)); 
-        phi_sup2 = 180/pi*real(acos(vs/d*tdd_sup2));
-
+        
         % Get speed curve
         vCurve = track_speed(fileNames{namesID}, t, t90);
         
@@ -137,15 +132,18 @@ for namesID = 1 : length(fileNames) % For each file
         t90_sup = t90 - axleDistance/v{namesID};
         tdd_inf_theo = passby( t90_inf, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
         tdd_sup_theo = passby( t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
-        tdd_inf_theo2 = passby( t90_inf, dist.source_mic, vCurve, t2, dist_mic_mic, heigth_mic, sinal);
-        tdd_sup_theo2 = passby( t90_sup, dist.source_mic, vCurve, t2, dist_mic_mic, heigth_mic, sinal);
 
+%% Results
+        
+        % Error calculation
+        itd_mean_error_sup = mean(abs(tdd_sup-tdd_sup_theo.'));
+        itd_mean_error_inf = mean(abs(tdd_inf-tdd_inf_theo.'));
+        
         % Plot DOA results
         titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. TestID: ', fileNames{namesID}];
                
         %plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{namesID}, titulo, vCurve);
         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{namesID}, titulo, vCurve);
-        plot_tdd_speed_theo(t2, tau2, [tdd_sup2 tdd_inf2, tdd_sup_theo2' tdd_inf_theo2'], Cmat2, false, fileNames{namesID}, titulo, vCurve);
         
         %set(gcf,'Visible', 'off');
         % Saving

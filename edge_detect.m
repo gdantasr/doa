@@ -42,7 +42,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
 %     image(100*G)
 %     pause
 %     
-    se = strel('disk',1);
+    se = strel('disk', 1);
     BW = imopen(G, se);
 %     image(100*BW)
 %     pause

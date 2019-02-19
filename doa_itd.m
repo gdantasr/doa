@@ -1,4 +1,4 @@
-function [phi_d, delay, t, Ti, Psum] = doa_itd(x1,x2,dx,N,Fs)
+function [phi_d, delay, t, tau, Psum] = doa_itd(x1,x2,dx,N,Fs)
 %function phi = doa_itd(x1,x2,dx,N,Fs,alpha)
 %
 % direction estimation (azimuth phi) for 1 dim. microphone array
@@ -39,24 +39,10 @@ function [phi_d, delay, t, Ti, Psum] = doa_itd(x1,x2,dx,N,Fs)
 
 show_final_map = 0;                          % disable plot of ITD map   
 
-% if nargin < 3
-%    help doa_itd
-%    return
-% elseif nargin < 4
-%    N = 512;
-%    Fs = 16000;
-%    alpha = 0.9;
-% elseif nargin < 5
-%    Fs = 16000;
-%    alpha = 0.9;
-% elseif nargin < 6
-%    alpha = 0.9;
-% end
-
-alpha = 0.85;
+alpha = 0.75;
 
 doa_threshold = 8.5/(1-alpha);               % threshold for speech activity
-dphi = 2.5;                                  % azimuth resolution in deg.
+dphi = 1;%2.5;                                  % azimuth resolution in deg.
 Lov = 4;
 M = round(N/Lov);                            % frame hop size
 
@@ -108,22 +94,25 @@ for n = 1:M:Nx-N+1
       it = imin(k);
       Pmap(k,it) = Pmap(k,it) + 1;           % update map of histogram
    end
-%   Pmap(find(Pmap<1)) = 0;                   % this may eliminate some amount of spurious data
+   Pmap(find(Pmap<1)) = 0;                   % this may eliminate some amount of spurious data
    Psum(m,:) = sum(Pmap(:,2:I-1));           % sum-up (average over frequency)   
-                                             % eliminate minima detection erros at phi = 0, 180°					                              % (at frequencies with no spectral components)
+                                             % eliminate minima detection erros at phi = 0, 180°
+                                             % (at frequencies with no spectral components)
    [Pmax,imax] = max(Psum(m,:));             % locate maximum
    if Pmax > doa_threshold
       phi_d(m) = phi(imax);
-      delay(m) = Ti(imax);
+      delay(m) = 2*Ti(imax);
       imax_old = imax;
    else
       phi_d(m) = phi(imax_old);
-      delay(m) = Ti(imax_old);
+      delay(m) = 2*Ti(imax_old);
    end
 end
 
 t = M/Fs*[0:m-1];
-Ti = 2*Ti(2:end-1);
+delay = 2*delay;
+maxDelay = 2 + ceil( dx/vs*Fs );
+tau = linspace(-maxDelay/Fs, maxDelay/Fs, length(Ti));    % Delay vector                                            
 Psum = flipud(Psum.');
 
 % % plot phi-trace
