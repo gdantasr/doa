@@ -110,8 +110,6 @@ for namesID = 1 : length(fileNames) % For each file
 %        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_aevd(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
-%	 Cmat = - Cmat % FOR AEVD
-
 
         % Post processing
         dist.source_mic = 2;

@@ -115,6 +115,7 @@ tau = linspace(-Nd/Fs,Nd/Fs,2*Ndo);
 delay = delay(1:k);
 phi = 180/pi*real(acos(vs/dx*delay/Fs1));
 t = linspace(0,(Nx-N-1)/Fs,length(phi));
+U = -U;
 
 disp(sprintf('final delay = %2.4e msec (%d samples)', ...
              1000*delay(end)/Fs1, delay(end)));
