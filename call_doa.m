@@ -33,9 +33,9 @@ heigth_mic = 1;
 % dist_source_source = 2.5; NÃO USA EM LUGAR NENHUM
 
 % Possible file names for specified car and speed
-carID = {'b'};%{'b', 'f', 'j', 'm'};               % Vehicles ID 
-speed = {'30'};%{'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
-passbyID = {'_1'};%{'_1','_2','_3'};                   
+carID = {'b', 'f', 'j', 'm'};               % Vehicles ID 
+speed = {'30', '50', '60', '70', '_ac'};    % Speeds (estimated)
+passbyID = {'_1','_2','_3'};                   
 fileNames = repmat(carID, [length(speed), 1]);
 fileNames = fileNames(:);
 fileNames = strcat( fileNames, repmat(speed', [length(carID), 1] ) );
@@ -109,8 +109,10 @@ for namesID = 1 : length(fileNames) % For each file
         [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
-%        [phi, tdd, t, tau, Cmat] = doa_evd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
-        
+%        [phi, tdd, t, tau, Cmat] = doa_aevd(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
+%	 Cmat = - Cmat % FOR AEVD
+
+
         % Post processing
         dist.source_mic = 2;
         dist.mic_mic = d;
@@ -147,8 +149,8 @@ for namesID = 1 : length(fileNames) % For each file
                
 %         plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{namesID}, titulo, vCurve);
         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{namesID}, titulo, vCurve);
-        
         %set(gcf,'Visible', 'off');
+
         % Saving
         F = getframe(gcf);
         figName = ['../Dissertação/Matlab/plots/doa_method/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
