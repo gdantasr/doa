@@ -81,7 +81,7 @@ for namesID = 1 : length(fileNames) % For each file
     %phiArrivalAngles = [0 0]; % degrees
     %f = 800; % [Hz]
     c = 340; % [m/s]
-    %fs = 44.1e3; % [Hz] %%GABI
+    %fs = 44.1e3; % [Hz]
 
     % Define array scanning angles (1D, so phi = 0)
     % TODO. MUDAR AQUI
@@ -108,8 +108,8 @@ for namesID = 1 : length(fileNames) % For each file
 
 
     %fmax = 4000/(2*0.2);
-    fmax = 600;
-    fmin = 10;
+    fmax = 4000;
+    fmin = 2000;
     Nfmax = round(Nfft*fmax/fs);
     Nfmin = round(Nfft*fmin/fs);
 
@@ -145,9 +145,7 @@ for namesID = 1 : length(fileNames) % For each file
             
             %Nfmax
             % Create cross spectral matrix
-            % GABI
             R = crossSpectralMatrix(transpose(inputSignal(Nf,:)));
-%            R = (1/fs)*X_D*X_D';
             
             %Nf
             %size(R)

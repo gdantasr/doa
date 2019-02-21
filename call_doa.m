@@ -105,8 +105,11 @@ for namesID = 1 : length(fileNames) % For each file
         % Azimuth = 90° instant calculation
         t90 = n90{namesID}/fs;
       
-        % ITD
-        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+        % DoA Algorithms
+        [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+%        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+%        [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
+%        [phi, tdd, t, tau, Cmat] = doa_evd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
         
         % Post processing
         dist.source_mic = 2;
@@ -115,7 +118,7 @@ for namesID = 1 : length(fileNames) % For each file
         [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
-        
+
         % Get speed curve
         vCurve = track_speed(fileNames{namesID}, t, t90);
         
@@ -142,13 +145,13 @@ for namesID = 1 : length(fileNames) % For each file
         % Plot DOA results
         titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. TestID: ', fileNames{namesID}];
                
-        %plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{namesID}, titulo, vCurve);
+%         plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{namesID}, titulo, vCurve);
         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{namesID}, titulo, vCurve);
         
         %set(gcf,'Visible', 'off');
         % Saving
         F = getframe(gcf);
-        figName = ['../Dissertação/Matlab/plots/speed_theo/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
+        figName = ['../Dissertação/Matlab/plots/doa_method/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
 %         imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
 %         savefig([figName, '.fig']);                 % Save .fig
 

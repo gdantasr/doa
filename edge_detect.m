@@ -14,49 +14,38 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     
     % Normaliza cada coluna da matriz de correlação
     Cmat = Cmat / max(abs(Cmat(:)));
-        
+            
     % Calculando janela de interesse (ignora dados distantes de t90)
     t_min = t90 - 1;
     t_max = t90 + 1;
     
     [~, indice_min] = min(abs(t_min - t));
     [~, indice_max] = min(abs(t_max - t));
-%     delta_t = t(end) / (length(t) - 1);         % Periodo entre amostras de tempo
-%     indice_min = floor(t_min / delta_t);        % Indice correspondente ao t_min  
-%     indice_max = floor(t_max / delta_t);        % Indice correspondente ao t_max
-%     indice_min = max([1 indice_min]);           % Limita indices ao comprimento
-%     indice_max = min([length(t) indice_max]);   % do vetor de tempo
-
-%     if indice_min < 1
-%         indice_min = 1;
-%     elseif indice_max > length(t)
-%         indice_max = length(t);
-%     end
 
     window = indice_min : indice_max; % Intervalo da janela
     tw = t(window);
     Cwindow = Cmat(:, window);
+    
     threshold = 0.15*max(Cwindow(:));
     
     G = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
 %     image(100*G)
-%     pause
-%     
+
+    %1
     se = strel('disk', 1);
     BW = imopen(G, se);
 %     image(100*BW)
-%     pause
-     
+        
+    %8
     se = strel('disk', 8);
     BW = imclose(BW, se);
 %     image(100*BW)
-%     pause
     
+    %5
     se = strel('disk', 5);
     BW = imopen(BW, se);
 %     image(100*BW)
-%     pause
-           
+               
     curva_sup = [0];
     curva_inf = [0];
     cpeaks = zeros(size(BW));
