@@ -28,22 +28,22 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     threshold = 0.15*max(Cwindow(:));
     
     G = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
-%     image(100*G)
+    image(100*G)
 
     %1
     se = strel('disk', 1);
     BW = imopen(G, se);
-%     image(100*BW)
+    image(100*BW)
         
     %8
     se = strel('disk', 8);
     BW = imclose(BW, se);
-%     image(100*BW)
+    image(100*BW)
     
     %5
     se = strel('disk', 5);
     BW = imopen(BW, se);
-%     image(100*BW)
+    image(100*BW)
                
     curva_sup = [0];
     curva_inf = [0];

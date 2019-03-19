@@ -79,7 +79,8 @@ end
 
 
 %% DOA Estimation
-for namesID = 1 : length(fileNames) % For each file
+mean_error = zeros(length(fileNames) , 1); % To store error for each test
+for fileID = 1 : length(fileNames) % For each file
     
     for mic = 4
         
@@ -96,17 +97,17 @@ for namesID = 1 : length(fileNames) % For each file
         [b,a] = butter(5, [fm/(originalFs/2) fc/(originalFs/2)], 'bandpass');   % Bandpass filter
         %[b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter
         %[b,a] = butter(5, fm/(originalFs/2), 'high');   % Highpass filter 
-        filtData = filter(b, a, originalData{namesID});     
+        filtData = filter(b, a, originalData{fileID});     
         %resampData = resample(filtData, fs, originalFs);
-        resampData = resample(originalData{namesID}, fs, originalFs);
+        resampData = resample(originalData{fileID}, fs, originalFs);
         data = resampData;
-        N = 2^(ceil(log2( max_samp_triang(5, v{namesID}, fs) )));
+        N = 2^(ceil(log2( max_samp_triang(5, v{fileID}, fs) )));
 
         % Azimuth = 90° instant calculation
-        t90 = n90{namesID}/fs;
+        t90 = n90{fileID}/fs;
       
         % DoA Algorithms
-        [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+       [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_aevd(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
@@ -114,44 +115,52 @@ for namesID = 1 : length(fileNames) % For each file
         % Post processing
         dist.source_mic = 2;
         dist.mic_mic = d;
-        dist.heigth = 1;
-        [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{namesID}, fromto{namesID}, plot_fit, 'exclude', fileNames{namesID}, dist);       
+        dist.heigth = 1.2;
+        [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{fileID}, fromto{fileID}, plot_fit, 'exclude', fileNames{fileID}, dist);       
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
 
         % Get speed curve
-        vCurve = track_speed(fileNames{namesID}, t, t90);
+        vCurve = track_speed(fileNames{fileID}, t, t90);
         
 %% Theoretical DOA
 
         axleDistance = 2.5; % Front-rear axles distance (m)
         % Verifica sentido de movimento do veículo
-        if strcmp (fromto{namesID}, '0° -> 180°')
+        if strcmp (fromto{fileID}, '0° -> 180°')
             sinal = -1; 
         else
             sinal = 1;
         end
-        t90_inf = t90 + axleDistance/v{namesID};
-        t90_sup = t90 - axleDistance/v{namesID};
+        t90_inf = t90 + axleDistance / (2*v{fileID});
+        t90_sup = t90 - axleDistance / (2*v{fileID});
         tdd_inf_theo = passby( t90_inf, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
         tdd_sup_theo = passby( t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
 
 %% Results
         
         % Error calculation
-        itd_mean_error_sup = mean(abs(tdd_sup-tdd_sup_theo.'));
-        itd_mean_error_inf = mean(abs(tdd_inf-tdd_inf_theo.'));
+        fs_tdd = round(1/mean(diff(t)));       % TDD estimation sample rate
+        [~, n90_tdd] = min(abs(t - t90));   % n90 sampled to TDD rate
+%         lim_inf = find(t == (t90 - 1));
+%         lim_sup = find(t == (t90 + 1));
+        if isempty(n90_tdd)
+            display('Segura ai, deu ruim')
+        end
+        mean_error_sup = mean(abs(tdd_sup(n90_tdd - fs_tdd) - tdd_sup_theo(n90_tdd + fs_tdd).'));
+        mean_error_inf = mean(abs(tdd_inf(n90_tdd - fs_tdd) - tdd_inf_theo(n90_tdd + fs_tdd).'));
+        mean_error(fileID) = (mean_error_sup + mean_error_inf)/2;
         
         % Plot DOA results
-        titulo =  ['Função GCC-PHAT. Banda ', num2str(fm), '-', num2str(fc), ' Hz. TestID: ', fileNames{namesID}];
+        titulo =  ['EVD Algortihm. Fullband signal. Test ID: ', fileNames{fileID}];
                
-%         plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{namesID}, titulo, vCurve);
-        plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{namesID}, titulo, vCurve);
+%         plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{fileID}, titulo, vCurve);
+%         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{fileID}, titulo, vCurve);
         %set(gcf,'Visible', 'off');
 
         % Saving
         F = getframe(gcf);
-        figName = ['../Dissertação/Matlab/plots/doa_method/doa_speed_band_', num2str(fm),'_' , num2str(fc), '_',fileNames{namesID}, '_d', num2str(100*d)];
+        figName = ['../Dissertação/Matlab/plots/0315/doa_evd_fullband_', fileNames{fileID}, '_d', num2str(100*d)];
 %         imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
 %         savefig([figName, '.fig']);                 % Save .fig
 

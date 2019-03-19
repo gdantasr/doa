@@ -1,4 +1,4 @@
-function fig = plot_tdd_speed(t, tau, tdd, Cmat, salvar, filename, titulo, speed)
+function fig = plot_tdd_speed_theo(t, tau, tdd, Cmat, salvar, filename, titulo, speed)
     figurebackcolor = 'white';
     pos = [0.01 0.52 0.49 0.40];
     fp1 = figure('numbertitle','off','name','GCC e TDD',...
@@ -9,7 +9,7 @@ function fig = plot_tdd_speed(t, tau, tdd, Cmat, salvar, filename, titulo, speed
     imagesc(t, 1000*tau, Cmat); 
     colormap(flipud(bone)); %colorbar; 
     set(gca,'YDir','normal'); hold on
-    %set(gcf,'Visible', 'off');
+    set(gcf,'Visible', 'off');
     
     % Plot tdd curve
     [hAx, hLeft, hRigth] = plotyy([t', t', t', t'], 1000*tdd, t, speed);
