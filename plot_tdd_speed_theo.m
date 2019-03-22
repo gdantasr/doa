@@ -9,7 +9,7 @@ function fig = plot_tdd_speed_theo(t, tau, tdd, Cmat, salvar, filename, titulo, 
     imagesc(t, 1000*tau, Cmat); 
     colormap(flipud(bone)); %colorbar; 
     set(gca,'YDir','normal'); hold on
-    set(gcf,'Visible', 'off');
+%     set(gcf,'Visible', 'off');
     
     % Plot tdd curve
     [hAx, hLeft, hRigth] = plotyy([t', t', t', t'], 1000*tdd, t, speed);

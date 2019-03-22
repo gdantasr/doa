@@ -7,7 +7,7 @@
 % carID:    Pass by car(s)
 % speed:    Pass by speed(s)
 
-%clear all; clc; 
+clear all; clc; 
 close all;
 
 %% Define parameters and load files
@@ -81,7 +81,6 @@ end
 %% DOA Estimation
 mean_error = zeros(length(fileNames) , 1); % To store error for each test
 for fileID = 1 : length(fileNames) % For each file
-    
     for mic = 4
         
         micsID = [mic 14-mic] ;               % Mics. for DOA algorithms
@@ -90,7 +89,11 @@ for fileID = 1 : length(fileNames) % For each file
         p2 = array (micsID(2), :);
         d = norm (p1-p2);  % Euclidean distance between two points
         dist_mic_mic = d;
-
+        % Distances structure
+        dist.source_mic = 2;
+        dist.mic_mic = d;
+        dist.heigth = 1.2;
+              
         % Pre processing
         fm = 500;       % Low cutoff freq
         fc = 2000;      % High cutoff freq
@@ -107,24 +110,15 @@ for fileID = 1 : length(fileNames) % For each file
         t90 = n90{fileID}/fs;
       
         % DoA Algorithms
-       [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
-%        [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+%        [phi, tdd, t, tau, Cmat] = doa_gcc(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
+       [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, N, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
 %        [phi, tdd, t, tau, Cmat] = doa_aevd(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
 
-        % Post processing
-        dist.source_mic = 2;
-        dist.mic_mic = d;
-        dist.heigth = 1.2;
-        [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{fileID}, fromto{fileID}, plot_fit, 'exclude', fileNames{fileID}, dist);       
-        phi_inf = 180/pi*real(acos(vs/d*tdd_inf)); 
-        phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
-
         % Get speed curve
         vCurve = track_speed(fileNames{fileID}, t, t90);
-        
-%% Theoretical DOA
 
+        % Theoretical DOA
         axleDistance = 2.5; % Front-rear axles distance (m)
         % Verifica sentido de movimento do veículo
         if strcmp (fromto{fileID}, '0° -> 180°')
@@ -132,16 +126,44 @@ for fileID = 1 : length(fileNames) % For each file
         else
             sinal = 1;
         end
-        t90_inf = t90 + axleDistance / (2*v{fileID});
-        t90_sup = t90 - axleDistance / (2*v{fileID});
-        tdd_inf_theo = passby( t90_inf, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
-        tdd_sup_theo = passby( t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
+        t90_inf = t90 + axleDistance / (2*v{fileID}/3.6);
+        t90_sup = t90 - axleDistance / (2*v{fileID}/3.6);
+        tdd_inf_theo = passby(t90_inf, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
+        tdd_sup_theo = passby(t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);       
+        tdd_theo = passby(t90, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
+        tdd_theo_img = zeros(size(Cmat), 'uint8');
+        for column = 1:length(t)
+            [~, row] = min(abs(tdd_inf_theo(column) - tau));
+            tdd_theo_img(row, column) = 255;
+            [~, row] = min(abs(tdd_sup_theo(column) - tau));
+            tdd_theo_img(row, column) = 255;
+        end
+        
+        
+        % Post processing
+        [tdd_inf, tdd_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v{fileID}, fromto{fileID}, plot_fit, 'exclude', fileNames{fileID}, dist, tdd_theo_img);       
+        phi_inf = 180/pi*real(acos(vs/d*tdd_inf));
+        phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
+        
+% %% Theoretical DOA
+% 
+%         axleDistance = 2.5; % Front-rear axles distance (m)
+%         % Verifica sentido de movimento do veículo
+%         if strcmp (fromto{fileID}, '0° -> 180°')
+%             sinal = -1; 
+%         else
+%             sinal = 1;
+%         end
+%         t90_inf = t90 + axleDistance / (2*v{fileID});
+%         t90_sup = t90 - axleDistance / (2*v{fileID});
+%         tdd_inf_theo = passby( t90_inf, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
+%         tdd_sup_theo = passby( t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);
 
 %% Results
         
         % Error calculation
-        fs_tdd = round(1/mean(diff(t)));       % TDD estimation sample rate
-        [~, n90_tdd] = min(abs(t - t90));   % n90 sampled to TDD rate
+        fs_tdd = round(1/mean(diff(t)));        % TDD estimation sample rate
+        [~, n90_tdd] = min(abs(t - t90));       % n90 sampled to TDD rate
 %         lim_inf = find(t == (t90 - 1));
 %         lim_sup = find(t == (t90 + 1));
         if isempty(n90_tdd)
@@ -152,15 +174,15 @@ for fileID = 1 : length(fileNames) % For each file
         mean_error(fileID) = (mean_error_sup + mean_error_inf)/2;
         
         % Plot DOA results
-        titulo =  ['EVD Algortihm. Fullband signal. Test ID: ', fileNames{fileID}];
+        titulo =  ['ITD Algortihm. Fullband signal. Test ID: ', fileNames{fileID}];
                
 %         plot_tdd_speed(t, tau, [tdd_sup tdd_inf], [tdd_sup_theo tdd_inf_theo], Cmat, false, fileNames{fileID}, titulo, vCurve);
-%         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{fileID}, titulo, vCurve);
+        plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{fileID}, titulo, vCurve);
         %set(gcf,'Visible', 'off');
 
         % Saving
         F = getframe(gcf);
-        figName = ['../Dissertação/Matlab/plots/0315/doa_evd_fullband_', fileNames{fileID}, '_d', num2str(100*d)];
+        figName = ['../Dissertação/Matlab/plots/0319/doa_itd_fullband_', fileNames{fileID}, '_d', num2str(100*d)];
 %         imwrite(F.cdata, [figName,'.png'], 'png');  % Save .png
 %         savefig([figName, '.fig']);                 % Save .fig
 

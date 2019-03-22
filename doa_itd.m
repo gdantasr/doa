@@ -112,7 +112,8 @@ end
 t = M/Fs*[0:m-1];
 delay = 2*delay;
 maxDelay = 2 + ceil( dx/vs*Fs );
-tau = linspace(-maxDelay/Fs, maxDelay/Fs, length(Ti));    % Delay vector                                            
+tau = linspace(-maxDelay/Fs, maxDelay/Fs, length(Ti));    % Delay vector
+tau = tau(2:end-1);
 Psum = flipud(Psum.');
 
 % % plot phi-trace

@@ -1,4 +1,4 @@
-function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, sentido, plotar, outlier_option, filename, dist)
+function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, sentido, plotar, outlier_option, filename, dist, theo)
 %
 % Duas buscas. De cima para baixo e de baixo para cima.
 
@@ -12,67 +12,88 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
 % outlier_option - `exclude` para eliminar dados discrepantes ou `replace`
 %                   para substituir pelos dados da primeira curva ajustada
     
-    % Normaliza cada coluna da matriz de correlação
-    Cmat = Cmat / max(abs(Cmat(:)));
+    % Cross corr matrix normalization
+    Cmat = Cmat/max(abs(Cmat(:)));
             
-    % Calculando janela de interesse (ignora dados distantes de t90)
-    t_min = t90 - 1;
-    t_max = t90 + 1;
-    
+    % Time window definition (around t90, when the car crosses the array)
+    t_min = t90 - 2;
+    t_max = t90 + 2;
     [~, indice_min] = min(abs(t_min - t));
     [~, indice_max] = min(abs(t_max - t));
-
     window = indice_min : indice_max; % Intervalo da janela
     tw = t(window);
     Cwindow = Cmat(:, window);
-    threshold = 0.15*max(Cwindow(:));
+    threshold = 0.1*max(Cwindow(:));
     
-    G = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
-    image(100*G)
-
-    %1
-    se = strel('disk', 1);
-    BW = imopen(G, se);
-    image(100*BW)
-        
-    %8
-    se = strel('disk', 8);
-    BW = imclose(BW, se);
-    image(100*BW)
+    %% "Image" processing steps
     
-    %5
-    se = strel('disk', 5);
-    BW = imopen(BW, se);
-    image(100*BW)
-               
-    curva_sup = [0];
-    curva_inf = [0];
-    cpeaks = zeros(size(BW));
-    for coluna = 1:size(BW,2),
-        [peaks, locs, largura] = findpeaks(BW(:,coluna));
-        tabPicos = table(locs, peaks, largura, 'VariableNames', {'Posicao' ; 'Amplitude' ; 'Largura'} );
-        tabPicos = sortrows(tabPicos, 'Amplitude');
-        
-        if length(peaks) == 0 % Nenhum pico encontrado
-             [~, mainPeaks] = max(BW(:,coluna));
-             curva_sup(coluna) = mainPeaks(1);
-             curva_inf(coluna) = mainPeaks(1);
-        elseif length(peaks) == 1 % Apenas 1 pico encontrado
-             mainPeaks = tabPicos.Posicao(1);
-             curva_sup(coluna) = mainPeaks(1);
-             curva_inf(coluna) = mainPeaks(1);
-        elseif (length(peaks) > 2 || length(peaks) == 2)
-            mainPeaks = sort(tabPicos.Posicao(1:2), 'descend'); % Posição dos 2 picos principais em ordem decrescente da posição
-            curva_sup(coluna) = mainPeaks(1);
-            curva_inf(coluna) = mainPeaks(2);
-        end
-        cpeaks (mainPeaks, coluna) = 1;
-
+    % Scale CrossCorr matrix values to grayscale
+    img_gray = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
+%     image(100*G)
+    
+    % Dilatation
+    se = strel('disk', 10);
+    img_dilated = imdilate(img_gray, se);
+%     image(100*BW);
+    
+    % Erosion
+    se = strel('disk', 2);
+    img_eroded = imerode(img_dilated, se);
+%     image(100*img_eroded);
+    
+    % Grayscale to Binary
+    img_binary = im2bw(img_eroded, 0.5*max(img_eroded(:)));
+%     image(100*img_binary);
+   
+    % "Remove" morphologic operation 
+    img = bwmorph(img_binary,'remove');
+%     image(100*img);
+    
+%     [nonZeroRows, nonZeroCols] = find(BW4); % Pontos não nulos. Pontos das "bordas"
+%     img2curve = zeros(size(img_gray)); % Inicializa
+%     curve = zeros(size(window));
+    
+%     i = 1;
+%     while i<=length(nonZeroCols)
+%         j = i;
+%         while j+1 < length(nonZeroCols) && nonZeroCols(j+1)==nonZeroCols(j)
+%             j = j+1; % Enquanto j marca a mesma coluna, agrupa
+%         end
+%         mean_point = round(mean(nonZeroRows(i:j))); % Pega o ponto médio entre as linhas não nulas da mesma coluna
+%         img2curve(mean_point, nonZeroCols(i)) = 1;
+%         curve(nonZeroCols(i)) = mean_point;
+%         i = j+1;
+%     end
+    
+    % Find mean curve from image
+    mean_curve = zeros(size(window));
+    for col = 1:size(img, 2)
+        mean_curve(col) = round(mean(find(img(:, col))));
     end
+        
+    % Interpolate to remove Nan data
+    xdata = (1:length(mean_curve))';
+    mean_curve = interp1( xdata(~isnan(mean_curve)), mean_curve(~isnan(mean_curve)), xdata);
+
+    % Median filter to remove noisy peaks
+    mean_curve = round(medfilt1(mean_curve,3));
     
     % Encontrando ajustes das curvas
-    curva_sup = (((curva_sup./max(curva_sup)).*(2*max(tau))) + min(tau));
-    curva_inf = (((curva_inf./max(curva_inf)).*(2*max(tau))) + min(tau));
+%     curva_sup = (((curva_sup./max(curva_sup)).*(2*max(tau))) + min(tau));
+%     curva_inf = (((curva_inf./max(curva_inf)).*(2*max(tau))) + min(tau));
+%     curve_scaled = zeros(size(curve));
+%     for i = 1:length(curve)
+%         if curve(i) ~= 0
+%             curve_scaled(i) = tau(curve(i));
+%         end
+%     end
+    
+
+    
+%     windowSize = 5; 
+%     b = (1/windowSize)*ones(1,windowSize);
+%     a = 1;
+%     filt_curve = filter(b,a,filt_curve1);
     
     % Verifica sentido de movimento do veículo
     if strcmp (sentido, '0° -> 180°')
@@ -80,10 +101,32 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     else
         sinal = 1;
     end
-    
+        
     x = t(window);
     vs = 340;
-        
+           
+    imagesc(tw, tau, img);
+    colormap(flipud(bone)); %colorbar;
+    set(gca,'YDir','normal'); hold on
+    plot(tw, mean_curve, 'b'); hold on
+    plot(tw, mean_curve, 'r');
+    
+    % Separate up and bottom curves by comparing with mean curve
+    curva_sup = zeros(size(mean_curve'));
+    curva_inf = zeros(size(mean_curve'));
+    for col = 1:size(img,2)                 % Loop through image columns
+        non_zero_lines = find(img(:, col)); % Find nonzero line indexes
+        if ~isempty(non_zero_lines)         % If there are any nonzero lines...
+            is_sup = non_zero_lines > mean_curve(col);
+            curva_sup(col) = tau(min(non_zero_lines(is_sup)));     % Sup and Inf curves keep lines
+            curva_inf(col) = tau(max(non_zero_lines(~is_sup)));    % which are closest to mean curve
+        else                                % Else, use mean curve for both
+            curva_sup(col) = tau(mean_curve(col));
+            curva_inf(col) = tau(mean_curve(col));
+        end
+    end
+       
+    % Define options for first fitting step
     options = fitoptions(   'Method',       'NonlinearLeastSquares', ... 
                             'Startpoint',   [t90, dist.source_mic, v], ... 
                             'Lower',        [0, 0, 0], ...
@@ -92,6 +135,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = edge_detect (t, t90, tau, Cmat, v, s
     % Fitting da curva superior
     f_sup = fittype(@(a,b,v,x)passby( a, b, v, x, dist.mic_mic, dist.heigth, sinal), ...
            'independent', {'x'}, 'coefficients', {'a','b','v'});
+    
     fit_sup = fit(t(window)', curva_sup', f_sup, options);
     
     % Atualizando parâmetros iniciais para o ajuste de curva com os resultados da
