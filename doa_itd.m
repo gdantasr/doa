@@ -39,11 +39,11 @@ function [phi_d, delay, t, tau, Psum] = doa_itd(x1,x2,dx,N,Fs)
 
 show_final_map = 0;                          % disable plot of ITD map   
 
-alpha = 0.75;
+alpha = 0.85;
 
 doa_threshold = 8.5/(1-alpha);               % threshold for speech activity
-dphi = 1;%2.5;                                  % azimuth resolution in deg.
-Lov = 4;
+dphi = 1; %2.5;                              % azimuth resolution in deg.
+Lov = 8;
 M = round(N/Lov);                            % frame hop size
 
 % create time window function
@@ -88,7 +88,7 @@ for n = 1:M:Nx-N+1
    X1 = X1 .* e1;                            % matrix of "delayed" spectrum
    X2 = X2 .* e2;
    dX = abs(X1-X2);                          % coincidence detection cost function eq. (6) 
-   [dum,imin] = min(dX.');                   % eq. (5) 
+   [~,imin] = min(dX.');                     % eq. (5) 
    Pmap = alpha*Pmap;                        % exponentially weighted (over time) histogram
    for k = 1:Nfh
       it = imin(k);

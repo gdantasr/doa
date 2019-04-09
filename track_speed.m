@@ -1,5 +1,8 @@
 function [ vShifted ] = track_speed( filename, tAudio, tCentralAudio )
 %   Speed tracking
+%   filename - Nome do arquivo CSV
+%   tAudio - Vetor de tempo dos dados de áudio
+%   tCentralAudio - Instante da passagem do carro em frente ao array
 
     % Read GPS data from csv table
     passbyTab = csv2table([filename, '.csv']);      
@@ -34,6 +37,6 @@ function [ vShifted ] = track_speed( filename, tAudio, tCentralAudio )
     elseif nDelay < 0
         vShifted = [vShifted(1 : end + nDelay) zeros(1, abs(nDelay))];
     end
-
+        
 end
 
