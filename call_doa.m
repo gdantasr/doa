@@ -18,13 +18,14 @@ addpath (genpath('../data/'))
 
 % Parameters definition
 load('array_circular_11mics.mat');          % Array geometry
+D = load('dist.txt');
 array = posMic;
 vs = 340;                                   % Sound speed propagation
 originalFs = 25600;                         % From acquisition
 fs = 25600;                                 % For processing
 plot_doa = false;                           % DOA plot flag
 plot_fit = false;                           % Fitted curves plot flag
-pre_filter = true;                         % Flag to filter signals before processing
+pre_filter = false;                         % Flag to filter signals before processing
 micsID = [6 8] ;                            % Mics. for DOA algorithms
 methodNames = {'gcc', 'itd', 'lms', 'evd'}; 
 
@@ -34,7 +35,7 @@ p2 = array (micsID(2), :);
 d = norm (p1-p2);  % Euclidean distance between two points
 dist_mic_mic = d;
 % Distances structure
-dist.source_mic = 2;
+%dist.source_mic = 2;
 dist.mic_mic = d;
 dist.heigth = 1.2;
 dist.axle = 2.5; % Average front-rear axles distance (m)
@@ -143,6 +144,10 @@ for fileID = 1 : length(fileNames) % For each file
         vCurve(is_zero) = v{fileID};    % Remove zeros
 
         % Theoretical DOA
+        
+        % Verifica distância que o carro passou
+        dist.source_mic = D(fileID);
+        
         % Verifica sentido de movimento do veículo
         if strcmp (fromto{fileID}, '0° -> 180°')
             sinal = -1; 
@@ -179,7 +184,7 @@ for fileID = 1 : length(fileNames) % For each file
 
         % Saving
         F = getframe(gcf);
-        filePath = ['../Dissertação/Matlab/plots/0514_1/'];
+        filePath = ['../Dissertação/Matlab/plots/0514_2/'];
         %figName = [filePath, 'doa_', methodNames{methodID},'_band_', num2str(fm), '_', num2str(fc), '_',fileNames{fileID},'_d', round(num2str(100*d)), '.png'];
         figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_band_', num2str(fm), '_', num2str(fc), '_d', round(num2str(1000*d)), '.png'];
         imwrite(F.cdata, figName, 'png');  % Save .png
