@@ -1,4 +1,4 @@
-function [phi_d, delay, t, tau, Psum] = doa_itd(x1,x2,dx,N,Fs)
+function [phi_d, delay, t, tau, Psum] = doa_itd(x1,x2,dx,N,Fs,Fmax)
 %function phi = doa_itd(x1,x2,dx,N,Fs,alpha)
 %
 % direction estimation (azimuth phi) for 1 dim. microphone array
@@ -69,12 +69,14 @@ Psum = zeros(Ndata,I-2);
 Pmap = zeros(Nfh,I);                         % ITD map
 vs = 340;                                    % acoustic waves propagation speed
 dx = abs(dx);
-Ti = dx/(2*vs)*sin(pi/(I-1)*[0:I-1] - pi/2); % time delay vector
+Ti = dx/(2*vs)*sin(pi/(I-1)*(0:I-1) - pi/2); % time delay vector
 phi = linspace(0,180,I);
 f = linspace(0,Fs/2,Nfh)';
+Kmax = ceil(Nfh*Fmax/Fs);
+%f = linspace(0,Fmax,Kmax)';
 e1 = exp(-j*2*pi*f*Ti);                      % matrix of phase factors (first signal)
 e2 = exp(-j*2*pi*f*Ti(end:-1:1));            % vector of phase factors (second signal)
-t = M/Fs*[0:Ndata-1];
+t = M/Fs*(0:Ndata-1);
 
 m = 0;
 for n = 1:M:Nx-N+1
@@ -95,9 +97,10 @@ for n = 1:M:Nx-N+1
       Pmap(k,it) = Pmap(k,it) + 1;           % update map of histogram
    end
    Pmap(find(Pmap<1)) = 0;                   % this may eliminate some amount of spurious data
-   Psum(m,:) = sum(Pmap(:,2:I-1));           % sum-up (average over frequency)   
+   %Psum(m,:) = sum(Pmap(:,2:I-1));           % sum-up (average over frequency)   
                                              % eliminate minima detection erros at phi = 0, 180°
                                              % (at frequencies with no spectral components)
+   Psum(m, :) = sum(Pmap(1:Kmax, 2:I-1));
    [Pmax,imax] = max(Psum(m,:));             % locate maximum
    if Pmax > doa_threshold
       phi_d(m) = phi(imax);
