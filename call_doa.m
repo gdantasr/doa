@@ -41,8 +41,8 @@ dist.heigth = 1.2;
 dist.axle = 2.5; % Average front-rear axles distance (m)
 
 % Experiment distances in meters (INMETRO)
-dist_source_mic = 2;
-heigth_mic = 1;
+%dist_source_mic = 2;
+%heigth_mic = 1;
 
 % Possible file names for specified car and speed
 carID = {'b', 'f', 'j', 'm'};               % Vehicles ID 
@@ -91,6 +91,7 @@ end
 
 %% DOA Estimation
 mean_error = zeros(length(fileNames) , length(methodNames)); % Store error for each test
+wheelbase = zeros(length(fileNames), 1);
 for fileID = 1 : length(fileNames) % For each file
     
     % Pre processing
@@ -102,8 +103,6 @@ for fileID = 1 : length(fileNames) % For each file
     %         [b,a] = butter(5, fc/(originalFs/2), 'low');   % Lowpass filter
     %         [b,a] = butter(5, fm/(originalFs/2), 'high');   % Highpass filter 
         data = filter(b, a, cropData{fileID});
-%         fs = 48000;
-%         data = resample(data, fs, originalFs);
         fmax_itd = min([fs/2, fc]);
     else
         data = cropData{fileID};
@@ -123,7 +122,7 @@ for fileID = 1 : length(fileNames) % For each file
                 
             case 'itd'
                 [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, 4*N, fs, fmax_itd);
-                th = 0.1;
+                th = 0.4;
                 
             case 'lms'
                 [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
@@ -160,7 +159,7 @@ for fileID = 1 : length(fileNames) % For each file
         tdd_sup_theo = passby(t90_sup, dist.source_mic, vCurve, t, dist_mic_mic, heigth_mic, sinal);       
 
         % Post processing
-        [tdd_inf, tdd_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v{fileID}, fromto{fileID}, plot_fit, 'exclude', fileNames{fileID}, dist, th);       
+        [tdd_inf, tdd_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v{fileID}, fromto{fileID}, plot_fit, 'exclude', [methodNames{methodID},'_',fileNames{fileID}], dist, th);       
         phi_inf = 180/pi*real(acos(vs/d*tdd_inf));
         phi_sup = 180/pi*real(acos(vs/d*tdd_sup));
         
@@ -174,19 +173,23 @@ for fileID = 1 : length(fileNames) % For each file
         mean_error_sup = mean(abs(tdd_sup(time_window) - tdd_sup_theo(time_window).'));
         mean_error_inf = mean(abs(tdd_inf(time_window) - tdd_inf_theo(time_window).'));
         mean_error(fileID, methodID) = (mean_error_sup + mean_error_inf)/2;
+        
+        wheelbase(fileID) = (fit_inf.a - fit_sup.a)*v{fileID}/3.6;
 
         % Plot DOA results
         carID = strfind('bfjm', fileNames{fileID}(1));
         titulo =  [upper(methodNames{methodID}),' Algorithm. Speed ', num2str(v{fileID}),' km/h. Car ', num2str(carID),'.'];
         %         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{fileID}, titulo, vCurvePlot);
         plot_tdd_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{fileID}, titulo);
+%         plot_Cmat(t, tau, Cmat, false, fileNames{fileID}, titulo);
 %         set(gcf,'Visible', 'off');
 
         % Saving
         F = getframe(gcf);
-        filePath = ['../Dissertação/Matlab/plots/0514_2/'];
+        filePath = ['../Dissertação/Matlab/plots/0516_3/'];
         %figName = [filePath, 'doa_', methodNames{methodID},'_band_', num2str(fm), '_', num2str(fc), '_',fileNames{fileID},'_d', round(num2str(100*d)), '.png'];
-        figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_band_', num2str(fm), '_', num2str(fc), '_d', round(num2str(1000*d)), '.png'];
+%         figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_band_', num2str(fm), '_', num2str(fc), '_d', round(num2str(1000*d)), '.png'];
+        figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_fullband_d', round(num2str(1000*d)), '.png'];
         imwrite(F.cdata, figName, 'png');  % Save .png
     %         savefig([figName, '.fig']);                 % Save .fig
          

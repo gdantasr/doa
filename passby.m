@@ -8,7 +8,7 @@ function y = passby( a, b, speed, x, dist_mic_mic, heigth_mic, sinal)
 %   Sonoras Veiculares Usando Arranjo De Microfones. 2018. TCC (Graduação) 
 %   - Curso de Engenharia Eletrônica e de Computação, UFRJ, Rio de Janeiro, 2018.
 
-vs = 340;  % Velocidade de propagação do som
+vs = 343;  % Velocidade de propagação do som
 
 y = sinal * ( sqrt( ( ( (x - a) .* speed/3.6) + dist_mic_mic ).^2 + b^2 + heigth_mic^2 ) - sqrt( ( (x - a) .* speed/3.6 ).^2 + (b)^2 + heigth_mic^2 )) / vs;
 

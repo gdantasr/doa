@@ -97,10 +97,10 @@ for n = 1:M:Nx-N+1
       Pmap(k,it) = Pmap(k,it) + 1;           % update map of histogram
    end
    Pmap(find(Pmap<1)) = 0;                   % this may eliminate some amount of spurious data
-   %Psum(m,:) = sum(Pmap(:,2:I-1));           % sum-up (average over frequency)   
+   Psum(m,:) = sum(Pmap(:,2:I-1));           % sum-up (average over frequency)   
                                              % eliminate minima detection erros at phi = 0, 180°
                                              % (at frequencies with no spectral components)
-   Psum(m, :) = sum(Pmap(1:Kmax, 2:I-1));
+   %Psum(m, :) = sum(Pmap(1:Kmax, 2:I-1));
    [Pmax,imax] = max(Psum(m,:));             % locate maximum
    if Pmax > doa_threshold
       phi_d(m) = phi(imax);
