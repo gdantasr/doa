@@ -30,19 +30,40 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     
     % Structuring elements size
     t_s = mean(diff(t));        % Time sampling period
-    xWidth = dist.wheelbase * 3.6 / (v * t_s);
-    yWidth = 4;
-    se_dilate = strel('rectangle', [round(xWidth)+1 yWidth]);
-    se_erode = strel('rectangle', [round(xWidth)-1 yWidth]);
+    xWidth = dist.wheelbase * 3.6 / (2 * v * t_s); % Half wheelbase
+    yWidth = 2;
+    
+    se_dilate = strel('rectangle', [yWidth round(xWidth)]);
+    se_erode = strel('rectangle', [round(xWidth) yWidth]);
+    
+%     se_dilate = strel('rectangle', [yWidth round(xWidth)+1]);
+%     se_erode = strel('rectangle', [yWidth round(xWidth)-1]);
     
     % Scale CrossCorr matrix values to grayscale
-    img_gray = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
+    %img_gray = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
+    
+    %SEl = strel('line', 3, -45)
+    %SEl = strel('disk', 2)
+    %SEl = fliplr([0 0 1; 0 1 1;  1 1 0; 1 0 0])
+    %SEl = fliplr([0 1 0; 1 1 1;  0 1 0])
+    %SEd = strel('disk',1)
+    SEd = ones(2);
+    SEl = ones(3);
+    img_gray = mat2gray(Cwindow);
+    
     % Dilatation
     img_dilated = imdilate(img_gray, se_dilate);
     % Erosion
-    img_eroded = imerode(img_dilated, se_erode);
+    img_eroded = imdilate(img_dilated, se_erode);
     % Grayscale to Binary
-    img_binary = im2bw(img_eroded, th*max(img_eroded(:)));
+    
+     
+    %img_close = imclose(img_open, ones(1));
+    th = graythresh(img_eroded);
+    img_binary = im2bw(img_eroded, th);
+    %%%%%%%%%%%%%%
+%    th = graythresh(img_eroded);    
+%   img_binary = im2bw(img_eroded, th);
     % "Remove" morphologic operation 
     img = bwmorph(img_binary,'remove');
 
@@ -73,17 +94,64 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
         is_sup = non_zero_lines > mean_curve(col);
         % Top curve
         if ~isempty(find(is_sup, 1))         % If there are any nonzero lines...
-            curva_sup(col) = tau(min(non_zero_lines(is_sup)));
+            curva_sup(col) = tau(max(non_zero_lines(is_sup)));
         else
             curva_sup(col) = tau(mean_curve(col));
         end
         % Bottom curve
         if ~isempty(find(~is_sup, 1))         % If there are any nonzero lines...
-            curva_inf(col) = tau(max(non_zero_lines(~is_sup))); 
+            curva_inf(col) = tau(min(non_zero_lines(~is_sup))); 
         else
             curva_inf(col) = tau(mean_curve(col));
         end
     end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    figure;
+    
+    imagesc(tw, tau, img_gray);
+    colormap(flipud(bone)); colorbar; 
+    set(gca,'YDir','normal'); hold on
+    set(gcf,'Visible', 'on');
+    pause(2)
+    
+    imagesc(tw, tau, img_dilated);
+    colormap(flipud(bone)); colorbar; 
+    set(gca,'YDir','normal'); hold on
+    set(gcf,'Visible', 'on');
+    pause(2)
+    
+    imagesc(tw, tau, img_eroded);
+    colormap(flipud(bone)); colorbar; 
+    set(gca,'YDir','normal'); hold on
+    set(gcf,'Visible', 'on');
+    pause(2)
+    
+    imagesc(tw, tau, img_binary);
+    colormap(flipud(bone)); colorbar; 
+    set(gca,'YDir','normal'); hold on
+    set(gcf,'Visible', 'on');
+    pause(2)
+    
+    imagesc(tw, tau, img);
+    colormap(flipud(bone)); colorbar; 
+    set(gca,'YDir','normal'); hold on
+    set(gcf,'Visible', 'on');
+    pause(2)
+    
+    % Edit figure
+    hAx = gca; 
+    ylabel(gca, 'Delay \tau (ms)') % left y-axis
+    xlabel('Time (s)');
+    grid on;
+    
+    hold on;
+    plot(tw, tau(mean_curve), '--', 'Color',[0 0 0]+0.5, 'Linewidth', 2); plot(tw, curva_sup, 'b'); plot(tw, curva_inf, 'r');
+%    pause;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
 
     % Check pass-by direction
     if strcmp (sentido, '0° -> 180°')

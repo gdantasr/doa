@@ -90,7 +90,7 @@ mean_error = zeros(length(fileNames) , length(methodNames)); % Store error for e
 wheelbase = zeros(length(fileNames), 1);
 wb_estimated = zeros(length(fileNames), 5);
 v_estimated = zeros(length(fileNames), 5);
-for fileID = 9%1 : length(fileNames) % For each file
+for fileID = 1 %: length(fileNames) % For each file
     
     % Pre processing
     if pre_filter
@@ -111,7 +111,7 @@ for fileID = 9%1 : length(fileNames) % For each file
     N = 2^(ceil(log2( max_samp_triang(5, v{fileID}, fs) )));
         
     % DoA Algorithms
-    for methodID = 1:5  
+    for methodID = 1:4
 
         switch methodNames{methodID}           
             case 'gcc'
@@ -206,8 +206,8 @@ for fileID = 9%1 : length(fileNames) % For each file
 %         figName = [filePath, 'doa_', methodNames{methodID},'_band_', num2str(fm), '_', num2str(fc), '_',fileNames{fileID},'_d', round(num2str(100*d)), '.png'];
 %         figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_band_', num2str(fm), '_', num2str(fc), '_d', round(num2str(1000*d)), '.png'];
         figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_fullband_d', round(num2str(1000*d))];
-        imwrite(F.cdata, [figName, '.png'], 'png');     % Save .png
-        savefig([figName, '.fig']);                     % Save .fig
+%         imwrite(F.cdata, [figName, '.png'], 'png');     % Save .png
+%         savefig([figName, '.fig']);                     % Save .fig
          
     end
     
@@ -222,8 +222,8 @@ end
 % error_tab = table( mean_error(:,1), mean_error(:,2), mean_error(:,3), mean_error(:,4), 'VariableNames', methodNames, 'RowNames', fileNames);
 % writetable(error_tab, [filePath, 'mean_error_2.csv']);
 
-save([filePath,'wb_estimated'], 'wb_estimated')
-save([filePath,'v_estimated'], 'v_estimated')
+%save([filePath,'wb_estimated'], 'wb_estimated')
+%save([filePath,'v_estimated'], 'v_estimated')
 
 % error_array = table2array(error_tab);
 % 
