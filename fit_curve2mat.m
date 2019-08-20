@@ -24,48 +24,18 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     window = indice_min : indice_max; % Intervalo da janela
     tw = t(window);
     Cwindow = Cmat(:, window);
-    threshold = th*max(Cwindow(:)); 
-    
+        
     %% "Image" processing steps
     
-    % Structuring elements size
-    t_s = mean(diff(t));        % Time sampling period
-    xWidth = dist.wheelbase * 3.6 / (2 * v * t_s); % Half wheelbase
-    yWidth = 2;
-    
-    se_dilate = strel('rectangle', [yWidth round(xWidth)]);
-    se_erode = strel('rectangle', [round(xWidth) yWidth]);
-    
-%     se_dilate = strel('rectangle', [yWidth round(xWidth)+1]);
-%     se_erode = strel('rectangle', [yWidth round(xWidth)-1]);
-    
-    % Scale CrossCorr matrix values to grayscale
-    %img_gray = mat2gray(Cwindow, [threshold max(Cwindow(:))]);
-    
-    %SEl = strel('line', 3, -45)
-    %SEl = strel('disk', 2)
-    %SEl = fliplr([0 0 1; 0 1 1;  1 1 0; 1 0 0])
-    %SEl = fliplr([0 1 0; 1 1 1;  0 1 0])
-    %SEd = strel('disk',1)
-    SEd = ones(2);
-    SEl = ones(3);
-    img_gray = mat2gray(Cwindow);
-    
-    % Dilatation
-    img_dilated = imdilate(img_gray, se_dilate);
-    % Erosion
-    img_eroded = imdilate(img_dilated, se_erode);
-    % Grayscale to Binary
-    
-     
-    %img_close = imclose(img_open, ones(1));
-    th = graythresh(img_eroded);
-    img_binary = im2bw(img_eroded, th);
-    %%%%%%%%%%%%%%
-%    th = graythresh(img_eroded);    
-%   img_binary = im2bw(img_eroded, th);
-    % "Remove" morphologic operation 
-    img = bwmorph(img_binary,'remove');
+    % Scale input matrix values to binary image range
+    if isempty(th)
+        th = graythresh(Cwindow); % Threshold from Otsu's method
+    end
+    img_binary = im2bw(Cwindow, th);   
+    % Morphological opening
+    img_open = imopen(img_binary, ones(3));
+    % "Remove" morphologic operation
+    img = bwmorph(img_open,'remove');
 
     %% Get data from image
     
@@ -110,25 +80,13 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     figure;
     
-    imagesc(tw, tau, img_gray);
-    colormap(flipud(bone)); colorbar; 
-    set(gca,'YDir','normal'); hold on
-    set(gcf,'Visible', 'on');
-    pause(2)
-    
-    imagesc(tw, tau, img_dilated);
-    colormap(flipud(bone)); colorbar; 
-    set(gca,'YDir','normal'); hold on
-    set(gcf,'Visible', 'on');
-    pause(2)
-    
-    imagesc(tw, tau, img_eroded);
-    colormap(flipud(bone)); colorbar; 
-    set(gca,'YDir','normal'); hold on
-    set(gcf,'Visible', 'on');
-    pause(2)
-    
     imagesc(tw, tau, img_binary);
+    colormap(flipud(bone)); colorbar; 
+    set(gca,'YDir','normal'); hold on
+    set(gcf,'Visible', 'on');
+    pause(2)
+    
+    imagesc(tw, tau, img_open);
     colormap(flipud(bone)); colorbar; 
     set(gca,'YDir','normal'); hold on
     set(gcf,'Visible', 'on');
@@ -139,7 +97,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     set(gca,'YDir','normal'); hold on
     set(gcf,'Visible', 'on');
     pause(2)
-    
+        
     % Edit figure
     hAx = gca; 
     ylabel(gca, 'Delay \tau (ms)') % left y-axis
@@ -152,7 +110,7 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-
+size(Cwindow)
     % Check pass-by direction
     if strcmp (sentido, '0° -> 180°')
         sinal = -1; 

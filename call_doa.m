@@ -120,7 +120,7 @@ for fileID = 1 %: length(fileNames) % For each file
                 
             case 'itd'
                 [phi, tdd, t, tau, Cmat] = doa_itd(data(:, micsID(1)), data(:, micsID(2)), d, 4*N, fs, fmax_itd);
-                th = 0.4;
+                th = [];
                 
             case 'lms'
                 [phi, tdd, t, tau, Cmat] = doa_lms(data(:, micsID(1)), data(:, micsID(2)), d, N/4, N, 0.25, fs);
