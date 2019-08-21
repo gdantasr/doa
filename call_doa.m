@@ -90,7 +90,7 @@ mean_error = zeros(length(fileNames) , length(methodNames)); % Store error for e
 wheelbase = zeros(length(fileNames), 1);
 wb_estimated = zeros(length(fileNames), 5);
 v_estimated = zeros(length(fileNames), 5);
-for fileID = 1 %: length(fileNames) % For each file
+for fileID = 1 : length(fileNames) % For each file
     
     % Pre processing
     if pre_filter
@@ -185,35 +185,26 @@ for fileID = 1 %: length(fileNames) % For each file
         [~, iMinInf] = min(abs(tdd_inf));
         [~, iMinSup] = min(abs(tdd_sup));
         wb_estimated(fileID, methodID) = abs(t(iMinInf) - t(iMinSup))*v{fileID}/3.6;  % Estimated wheelbase distances
-        %wheelbase(fileID) = abs(fit_inf.a - fit_sup.a)*v{fileID}/3.6;  % Estimated wheelbase distances
+%         wheelbase(fileID) = abs(fit_inf.a - fit_sup.a)*v{fileID}/3.6;  % Estimated wheelbase distances
         v_estimated(fileID, methodID) = fit_sup.v;
 
         % Plot DOA results
         carID = strfind('bfjm', fileNames{fileID}(1));
-%         titulo =  ['TDoA Model. Speed ', num2str(v{fileID}),' km/h. Car ', num2str(carID),'.'];
-%         plot_theo_compare(t, tau, [tdd_sup_theo2' tdd_inf_theo2', tdd_sup_theo' tdd_inf_theo'], false, fileNames{fileID}, titulo);
         titulo =  [upper(methodNames{methodID}),' Algorithm. Speed ', num2str(v{fileID}),' km/h. Car ', num2str(carID),'.'];
-%         plot_tdd_speed_theo(t, tau, [tdd_sup tdd_inf, tdd_sup_theo' tdd_inf_theo'], Cmat, false, fileNames{fileID}, titulo, vCurvePlot);
         plotRange = (round(2.5*fs_tdd) : round(7.5*fs_tdd));
         tPlot = t(1:length(plotRange));
         plot_tdd_theo(tPlot, tau, [tdd_sup(plotRange) tdd_inf(plotRange), tdd_sup_theo(plotRange)' tdd_inf_theo(plotRange)'], Cmat(:, plotRange), false, fileNames{fileID}, titulo);
-%         plot_Cmat(t, tau, Cmat, false, fileNames{fileID}, titulo);
-%         set(gcf,'Visible', 'off');
+%         set(gcf,'Visible', 'on');
 
         % Saving
         F = getframe(gcf);
-        filePath = ['../Dissertação/Matlab/plots/0530_1/'];
-%         figName = [filePath, 'doa_', methodNames{methodID},'_band_', num2str(fm), '_', num2str(fc), '_',fileNames{fileID},'_d', round(num2str(100*d)), '.png'];
-%         figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_band_', num2str(fm), '_', num2str(fc), '_d', round(num2str(1000*d)), '.png'];
+        filePath = ['../Pesquisa/Matlab/Resultados/0821/'];
         figName = [filePath, num2str(fileID), '_doa_', methodNames{methodID}, '_fullband_d', round(num2str(1000*d))];
-%         imwrite(F.cdata, [figName, '.png'], 'png');     % Save .png
+        imwrite(F.cdata, [figName, '.png'], 'png');     % Save .png
 %         savefig([figName, '.fig']);                     % Save .fig
          
     end
     
-    
-%     [~, iMinInf] = min(abs(tdd_inf_theo));
-%     [~, iMinSup] = min(abs(tdd_sup_theo));
 %     wb_estimated(fileID, 5) = abs(t(iMinInf) - t(iMinSup))*v{fileID}/3.6;  % Estimated wheelbase distances
       
     fileID

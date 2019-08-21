@@ -53,28 +53,35 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     mean_curve(over) = 1;
     % Median filter to remove noisy peaks
     mean_curve = round(medfilt1(mean_curve,3));
-        
+
+    [yData, xData] = find(img_open);
+    meanData = mean_curve(xData);
+    yDataSup = yData(yData >= meanData);
+    xDataSup = xData(yData >= meanData);
+    yDataInf = yData(yData <= meanData);
+    xDataInf = xData(yData <= meanData);
+
     %% Prepare data for curve fitting
     
-    % Separate up and bottom curves by comparing with mean curve
-    curva_sup = zeros(size(mean_curve'));
-    curva_inf = zeros(size(mean_curve'));
-    for col = 1:size(img,2)                 % Loop through image columns
-        non_zero_lines = find(img(:, col)); % Find nonzero line indexes
-        is_sup = non_zero_lines > mean_curve(col);
-        % Top curve
-        if ~isempty(find(is_sup, 1))         % If there are any nonzero lines...
-            curva_sup(col) = tau(max(non_zero_lines(is_sup)));
-        else
-            curva_sup(col) = tau(mean_curve(col));
-        end
-        % Bottom curve
-        if ~isempty(find(~is_sup, 1))         % If there are any nonzero lines...
-            curva_inf(col) = tau(min(non_zero_lines(~is_sup))); 
-        else
-            curva_inf(col) = tau(mean_curve(col));
-        end
-    end
+%     % Separate up and bottom curves by comparing with mean curve
+%     yDataSup = zeros(size(mean_curve'));
+%     yDataInf = zeros(size(mean_curve'));
+%     for col = 1:size(img,2)                 % Loop through image columns
+%         non_zero_lines = find(img(:, col)); % Find nonzero line indexes
+%         is_sup = non_zero_lines > mean_curve(col);
+%         % Top curve
+%         if ~isempty(find(is_sup, 1))         % If there are any nonzero lines...
+%             yDataSup(col) = tau(max(non_zero_lines(is_sup)));
+%         else
+%             yDataSup(col) = tau(mean_curve(col));
+%         end
+%         % Bottom curve
+%         if ~isempty(find(~is_sup, 1))         % If there are any nonzero lines...
+%             yDataInf(col) = tau(min(non_zero_lines(~is_sup))); 
+%         else
+%             yDataInf(col) = tau(mean_curve(col));
+%         end
+%     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,12 +98,6 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     set(gca,'YDir','normal'); hold on
     set(gcf,'Visible', 'on');
     pause(2)
-    
-    imagesc(tw, tau, img);
-    colormap(flipud(bone)); colorbar; 
-    set(gca,'YDir','normal'); hold on
-    set(gcf,'Visible', 'on');
-    pause(2)
         
     % Edit figure
     hAx = gca; 
@@ -105,12 +106,11 @@ function [y_inf, y_sup, fit_inf, fit_sup] = fit_curve2mat (t, t90, tau, Cmat, v,
     grid on;
     
     hold on;
-    plot(tw, tau(mean_curve), '--', 'Color',[0 0 0]+0.5, 'Linewidth', 2); plot(tw, curva_sup, 'b'); plot(tw, curva_inf, 'r');
-%    pause;
+    plot(tw, tau(mean_curve), '--', 'Color',[0 0 0]+0.5, 'Linewidth', 2); plot(tw(xDataSup), tau(yDataSup), 'b'); plot(tw(xDataInf), tau(yDataInf), 'r');
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-size(Cwindow)
     % Check pass-by direction
     if strcmp (sentido, '0° -> 180°')
         sinal = -1; 
@@ -128,7 +128,7 @@ size(Cwindow)
     f_sup = fittype(@(a,b,v,x)passby( a, b, v, x, dist.mic_mic, dist.heigth, sinal), ...
            'independent', {'x'}, 'coefficients', {'a','b','v'});
     
-    fit_sup = fit(t(window)', curva_sup', f_sup, options);
+    fit_sup = fit(tw(xDataSup)', tau(yDataSup)', f_sup, options);
     
     % Update startpoints with upper curve fit results
     options = fitoptions(   'Method',       'NonlinearLeastSquares', ...
@@ -139,39 +139,41 @@ size(Cwindow)
     % Bottom curve fitting
     f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist.mic_mic, dist.heigth, sinal), ...
               'independent', {'x'}, 'coefficients', {'a'} );
-    fit_inf = fit(t(window)', curva_inf', f_inf, options);
+    fit_inf = fit(tw(xDataInf)', tau(yDataInf)', f_inf, options);
     
     % Save curves for final plot
-    y_sup_inicial = fit_sup(t);
-    y_inf_inicial = fit_inf(t);
-    curva_sup_inicial = curva_sup;
-    curva_inf_inicial = curva_inf;
+%     firstCurveSup = fit_sup(xDataSup);
+%     firstCurveInf = fit_inf(xDataInf);
+    firstDataSup = yDataSup;
+    firstDataInf = yDataInf;
+    firstCurveSup = fit_sup(tw);
+    firstCurveInf = fit_inf(tw);
     
     % Improve fitting    
-    tolerancia = 2e-4;
-    %tolerancia = 1.5*std(curva_sup_inicial);
-    y_sup_win = y_sup_inicial(window);
-    y_inf_win = y_inf_inicial(window);
+    %tolerancia = 2e-4;
+    tolerancia = 1.5*std(firstCurveSup);
+%     y_sup_win = y_sup_inicial(window);
+%     y_inf_win = y_inf_inicial(window);
     
     % Find outliers
-    ind_erro_sup = abs(y_sup_win' - curva_sup) > tolerancia;
-    ind_erro_inf = abs(y_inf_win' - curva_inf) > tolerancia; 
+    ind_erro_sup = abs(firstCurveSup - tau(yDataSup)') > tolerancia;
+    ind_erro_inf = abs(firstCurveInf - tau(yDataInf)') > tolerancia; 
     
     switch outlier_option
     
         case 'replace'
             
             % Substitute outliers with initial fit curve points
-            curva_sup(ind_erro_sup) = y_sup_win(ind_erro_sup);
-            curva_inf(ind_erro_inf) = y_inf_win(ind_erro_inf);
+            yDataSup(ind_erro_sup) = y_sup_win(ind_erro_sup);
+            yDataInf(ind_erro_inf) = y_inf_win(ind_erro_inf);
             % Outliers vector initialization
-            outliers_sup = false(1, length(curva_sup));
-            outliers_inf = false(1, length(curva_inf));
+            outliers_sup = false(1, length(yDataSup));
+            outliers_inf = false(1, length(yDataInf));
             
         case 'exclude'
         
-            outliers_sup = excludedata(tw, curva_sup, 'indices', ind_erro_sup);
-            outliers_inf = excludedata(tw , curva_inf, 'indices', ind_erro_inf);
+            outliers_sup = excludedata(xDataSup, yDataSup, 'indices', ind_erro_sup);
+            outliers_inf = excludedata(xDataInf, yDataInf, 'indices', ind_erro_inf);
     
         otherwise
             display('ERRO. Opção não disponível. Escolha entre replace ou exclude.');
@@ -186,7 +188,7 @@ size(Cwindow)
    
     % Upper curve fitting
     %[fit_sup, gof] = fit(...);
-    fit_sup = fit(t(window)', curva_sup', f_sup, options);
+    fit_sup = fit(tw(xDataSup)', tau(yDataSup)', f_sup, options);
     t90f = fit_sup.a;
     
     %writetable(struct2table(gof), [filename, '.txt'])
@@ -205,10 +207,68 @@ size(Cwindow)
 %           'dependent', {'y_inf'}, 'independent', {'x'}, 'coefficients', {'c'});
     f_inf = fittype( @(a,x)passby(a, fit_sup.b, fit_sup.v, x, dist.mic_mic, dist.heigth, sinal), ...
                      'independent', {'x'}, 'coefficients', {'a'} );
-    fit_inf = fit(t(window)', curva_inf', f_inf, options);
+    fit_inf = fit(tw(xDataInf)', tau(yDataInf)', f_inf, options);
     
     y_sup = fit_sup(t);
     y_inf = fit_inf(t);
+    
+    
+    
+        figure
+        img_name = strcat(num2str(v), 'dados&estimativa_inf');
+
+        % Plota os dados
+        p_dinf = plot(tw(xDataInf), 1000*tau(firstDataInf), '*');hold on;
+        p_dsup = plot(tw(xDataSup), 1000*tau(firstDataSup), '*'); hold on;
+        p_dinf.Color = RGB('light blue'); p_dinf.MarkerSize = 4;
+        p_dsup.Color = RGB('light orange'); p_dsup.MarkerSize = 4;
+        axis ([0 t(end) -0.8 0.8]);
+        xlabel('Tempo (s)'), ylabel('Atraso \tau (ms)');
+        h = [p_dsup p_dinf];
+        legend(h, 'Dados Fonte 1', 'Dados Fonte 2',...
+                'Location', 'northoutside', 'Orientation', 'horizontal')
+        img_name = strcat(filename, '_DATA_ANTES');
+        % Plota as curvas
+        p_cinf = plot(tw', 1000*firstCurveInf); hold on;
+        p_csup = plot(tw', 1000*firstCurveSup);
+        p_cinf.Color = RGB('dark blue'); pcinf.LineWidth = 1;
+        p_csup.Color = RGB('orange'); p_csup.LineWidth = 1;
+        axis ([0 t(end) -0.8 0.8]);
+        xlabel('Tempo t (s)'), ylabel('Atraso \tau (ms)');
+        h = [p_csup p_dsup p_cinf p_dinf];
+        legend(h, 'Curva Fonte 1', 'Curva Fonte 2', 'Dados Fonte 1', 'Dados Fonte 2',...
+                'Location', 'northoutside', 'Orientation', 'horizontal')
+        img_name = strcat(filename, '_CURVA_ANTES');
+        
+                figure
+        img_name = strcat(num2str(v), 'dados&estimativa_inf');
+
+        % SEM OUTLIERS
+        % Plota os dados
+        p_dinf = plot(tw(xDataInf), 1000*tau(firstDataInf), '*');hold on;
+        p_dsup = plot(tw(xDataSup), 1000*tau(firstDataSup), '*'); hold on;
+        p_dinf.Color = RGB('light blue'); p_dinf.MarkerSize = 4;
+        p_dsup.Color = RGB('light orange'); p_dsup.MarkerSize = 4;
+        axis ([0 t(end) -0.8 0.8]);
+        xlabel('Tempo (s)'), ylabel('Atraso \tau (ms)');
+        h = [p_dsup p_dinf];
+        legend(h, 'Dados Fonte 1', 'Dados Fonte 2',...
+                'Location', 'northoutside', 'Orientation', 'horizontal')
+        img_name = strcat(filename, '_DATA_ANTES');
+        % Plota as curvas
+        p_cinf = plot(tw', 1000*firstCurveInf); hold on;
+        p_csup = plot(tw', 1000*firstCurveSup);
+        p_cinf.Color = RGB('dark blue'); pcinf.LineWidth = 1;
+        p_csup.Color = RGB('orange'); p_csup.LineWidth = 1;
+        axis ([0 t(end) -0.8 0.8]);
+        xlabel('Tempo t (s)'), ylabel('Atraso \tau (ms)');
+        h = [p_csup p_dsup p_cinf p_dinf];
+        legend(h, 'Curva Fonte 1', 'Curva Fonte 2', 'Dados Fonte 1', 'Dados Fonte 2',...
+                'Location', 'northoutside', 'Orientation', 'horizontal')
+        img_name = strcat(filename, '_CURVA_ANTES');
+
+        
+    
     
     % Alternativa para o ajuste da curva inferior: Aplica atraso na curva 
     % superior
@@ -225,8 +285,8 @@ size(Cwindow)
         img_name = strcat(num2str(v), 'dados&estimativa_inf');
 
         % Plota os dados
-        p_dinf = plot(tw, 1000*curva_inf_inicial, '*');hold on;
-        p_dsup = plot(tw, 1000*curva_sup_inicial, '*'); hold on;
+        p_dinf = plot(tw, 1000*firstCurveInf, '*');hold on;
+        p_dsup = plot(tw, 1000*firstCurveSup, '*'); hold on;
         p_dinf.Color = RGB('light blue'); p_dinf.MarkerSize = 4;
         p_dsup.Color = RGB('light orange'); p_dsup.MarkerSize = 4;
         axis ([0 t(end) -0.8 0.8]);
@@ -240,7 +300,7 @@ size(Cwindow)
 
         % Plota as curvas
         p_cinf = plot(t, 1000*y_inf_inicial); hold on;
-        p_csup = plot(t, 1000*y_sup_inicial);
+        p_csup = plot(t, 1000*firstCurveSup);
         p_cinf.Color = RGB('dark blue'); pcinf.LineWidth = 1;
         p_csup.Color = RGB('orange'); p_csup.LineWidth = 1;
         axis ([0 t(end) -0.8 0.8]);
@@ -258,11 +318,11 @@ size(Cwindow)
         close all;
 
         if outlier_option == 'replace'
-            p_dinf = plot(tw, 1000*curva_inf, '*');hold on;
-            p_dsup = plot(tw, 1000*curva_sup, '*'); hold on;
+            p_dinf = plot(tw, 1000*yDataInf, '*');hold on;
+            p_dsup = plot(tw, 1000*yDataSup, '*'); hold on;
         elseif outlier_option == 'exclude'
-            p_dinf = plot(tw(~outliers_inf), 1000*curva_inf(~outliers_inf), '*');hold on;
-            p_dsup = plot(tw(~outliers_sup), 1000*curva_sup(~outliers_sup), '*'); hold on;
+            p_dinf = plot(tw(~outliers_inf), 1000*yDataInf(~outliers_inf), '*');hold on;
+            p_dsup = plot(tw(~outliers_sup), 1000*yDataSup(~outliers_sup), '*'); hold on;
         end
         p_dinf.Color = RGB('light blue'); p_dinf.MarkerSize = 4;
         p_dsup.Color = RGB('light orange'); p_dsup.MarkerSize = 4;
